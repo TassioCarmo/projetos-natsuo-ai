@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fundamentos de Programação</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0c0a08;
+      --bg-elevated:  #131110;
+      --bg-card:      #181512;
+      --bg-code:      #1c1815;
+      --text:         #ede5d8;
+      --text-sec:     #a89880;
+      --text-muted:   #6b5e50;
+      --accent:       #d4a843;
+      --accent-dim:   rgba(212,168,67,.14);
+      --accent2:      #5eadb5;
+      --accent2-dim:  rgba(94,173,181,.12);
+      --accent3:      #b8705a;
+      --border:       #1f1b17;
+      --border-light: #2d2720;
+      --java:   #e8943a;
+      --haskell:#8b6fc4;
+      --python: #4e9ed3;
+      --clang:  #6db890;
+      --ts:     #4a90d4;
+      --zig:    #f7a41d;
+      --font-serif: 'Crimson Pro', Georgia, serif;
+      --font-sans:  'DM Sans', system-ui, sans-serif;
+      --font-mono:  'IBM Plex Mono', monospace;
+      --radius: 6px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── GRAIN OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: .6;
+    }
+
+    /* ── HEADER ── */
+    .site-header {
+      position: sticky; top: 0; z-index: 200;
+      height: 58px;
+      background: rgba(12,10,8,.92);
+      backdrop-filter: blur(14px) saturate(1.4);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 28px; gap: 36px;
+    }
+
+    .site-logo {
+      font-family: var(--font-mono);
+      font-size: 12px; letter-spacing: .1em;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .tab-nav { display: flex; gap: 4px; height: 100%; align-items: center; }
+
+    .tab-btn {
+      font-family: var(--font-sans);
+      font-size: 13px; font-weight: 500;
+      letter-spacing: .02em;
+      padding: 6px 18px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-sec);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .tab-btn:hover  { color: var(--text); background: var(--bg-elevated); }
+    .tab-btn.active { color: var(--accent); border-color: var(--border-light); background: var(--bg-elevated); }
+
+    /* ── LAYOUT ── */
+    .page-layout {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      min-height: calc(100vh - 58px);
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: sticky; top: 58px;
+      height: calc(100vh - 58px);
+      overflow-y: auto;
+      padding: 36px 14px 36px 24px;
+      border-right: 1px solid var(--border);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-light) transparent;
+    }
+
+    .sidebar-label {
+      font-family: var(--font-mono);
+      font-size: 9.5px; letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .toc-list { list-style: none; }
+    .toc-list li { margin-bottom: 1px; }
+
+    .toc-link {
+      display: block;
+      font-size: 12.5px;
+      color: var(--text-sec);
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border-left: 2px solid transparent;
+      line-height: 1.45;
+      transition: all .15s;
+    }
+    .toc-link:hover { color: var(--text); background: var(--bg-elevated); border-left-color: var(--border-light); }
+    .toc-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-dim); }
+
+    .toc-sub { list-style: none; padding-left: 12px; }
+    .toc-sub .toc-link { font-size: 11.5px; color: var(--text-muted); }
+    .toc-sub .toc-link:hover { color: var(--text-sec); }
+    .toc-sub .toc-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-dim); }
+
+    /* ── MAIN ── */
+    .main-content { max-width: 820px; padding: 52px 60px; }
+
+    .section-panel { display: none; }
+    .section-panel.active {
+      display: block;
+      animation: fadeUp .3s ease-out;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    /* ── TYPOGRAPHY ── */
+    h1 {
+      font-family: var(--font-serif);
+      font-size: 3.2rem; font-weight: 700;
+      line-height: 1.1; letter-spacing: -.025em;
+      color: var(--text); margin-bottom: 20px;
+    }
+
+    h2 {
+      font-family: var(--font-serif);
+      font-size: 2rem; font-weight: 600;
+      color: var(--text);
+      margin: 60px 0 20px; padding-top: 12px;
+      position: relative;
+    }
+    h2::after {
+      content: '';
+      position: absolute; bottom: -8px; left: 0;
+      width: 36px; height: 2px;
+      background: var(--accent);
+    }
+
+    h3 {
+      font-family: var(--font-sans);
+      font-size: 1rem; font-weight: 600;
+      color: var(--accent2);
+      margin: 32px 0 12px;
+    }
+
+    h4 {
+      font-family: var(--font-mono);
+      font-size: .84rem; font-weight: 500;
+      color: var(--accent); letter-spacing: .04em;
+      margin: 22px 0 10px;
+    }
+
+    p { font-size: .955rem; color: var(--text); margin-bottom: 16px; line-height: 1.8; }
+    strong { color: var(--text); font-weight: 600; }
+    em { font-style: italic; color: var(--text-sec); }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    ol, ul { padding-left: 24px; margin-bottom: 16px; font-size: .955rem; line-height: 1.85; }
+    li { margin-bottom: 2px; }
+
+    .lead-quote {
+      font-family: var(--font-serif);
+      font-size: 1.18rem; font-style: italic;
+      color: var(--text-sec);
+      border-left: 3px solid var(--accent);
+      padding: 6px 22px; margin: 0 0 44px;
+      line-height: 1.65;
+    }
+
+    /* ── CODE ── */
+    .code-wrap { position: relative; }
+
+    .code-lang {
+      position: absolute; top: 9px; right: 12px;
+      font-family: var(--font-mono);
+      font-size: 9px; letter-spacing: .15em;
+      color: var(--text-muted); text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    pre {
+      background: var(--bg-code) !important;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius);
+      padding: 20px 22px; margin: 18px 0;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: .81rem; line-height: 1.68;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: .84em;
+      color: var(--accent2);
+      background: rgba(94,173,181,.1);
+      padding: 2px 6px; border-radius: 3px;
+    }
+    pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x: auto; margin: 22px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead tr { border-bottom: 2px solid var(--accent); }
+    thead th {
+      font-family: var(--font-mono);
+      font-size: 10.5px; letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      padding: 10px 16px; text-align: left;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+    tbody tr:hover { background: var(--bg-elevated); }
+    tbody td { padding: 10px 16px; vertical-align: top; color: var(--text); }
+    tbody td:first-child { font-family: var(--font-mono); font-size: .82rem; color: var(--accent2); }
+
+    /* ── CALLOUT BOXES ── */
+    .tip {
+      background: var(--accent-dim);
+      border: 1px solid rgba(212,168,67,.2);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 14px 18px; margin: 18px 0;
+      font-size: .9rem; line-height: 1.7;
+    }
+    .warn {
+      background: rgba(184,112,90,.1);
+      border: 1px solid rgba(184,112,90,.2);
+      border-left: 3px solid var(--accent3);
+      border-radius: var(--radius);
+      padding: 14px 18px; margin: 18px 0;
+      font-size: .9rem; line-height: 1.7;
+    }
+
+    hr.divider { border: none; border-top: 1px solid var(--border); margin: 52px 0; }
+
+    /* ── LANGUAGE CARDS ── */
+    .lang-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 36px;
+      transition: border-color .2s;
+    }
+    .lang-card:hover { border-color: var(--border-light); }
+
+    .lang-header {
+      display: flex; gap: 20px; align-items: flex-start;
+      padding: 26px 28px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lang-bar { width: 4px; flex-shrink: 0; border-radius: 2px; min-height: 60px; }
+
+    .lang-num {
+      font-family: var(--font-mono); font-size: .72rem;
+      color: var(--text-muted); min-width: 22px; padding-top: 2px;
+    }
+    .lang-name {
+      font-family: var(--font-mono);
+      font-size: 1.7rem; font-weight: 500;
+      letter-spacing: -.02em; line-height: 1;
+      color: var(--text);
+    }
+    .lang-sub { font-size: .78rem; color: var(--text-muted); margin-top: 5px; }
+
+    .badges { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 9.5px; letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 3px 10px; border-radius: 20px;
+      background: var(--bg); border: 1px solid var(--border-light);
+      color: var(--text-sec);
+    }
+
+    .lang-body { padding: 26px 28px; }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 9.5px; letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px; margin-top: 26px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    .uses-grid {
+      list-style: none; padding: 0;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-bottom: 24px;
+    }
+    .use-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 12px 14px;
+    }
+    .use-item strong {
+      display: block;
+      font-size: .8rem; color: var(--accent2); margin-bottom: 3px;
+    }
+    .use-item span { font-size: .8rem; color: var(--text-sec); line-height: 1.55; display: block; }
+
+    /* curiosities */
+    .cur-toggle {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: 9px 16px;
+      color: var(--text-sec);
+      font-family: var(--font-mono);
+      font-size: 10.5px; letter-spacing: .1em;
+      cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: all .2s;
+    }
+    .cur-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    .cur-body { display: none; padding-top: 16px; }
+    .cur-body.open { display: block; }
+
+    .cur-item {
+      border-left: 2px solid var(--border-light);
+      padding: 6px 0 6px 16px;
+      margin-bottom: 14px;
+      font-size: .875rem; color: var(--text-sec); line-height: 1.65;
+    }
+    .cur-item strong { display: block; color: var(--text); font-size: .83rem; margin-bottom: 3px; }
+
+    /* compare table colors */
+    .tag-yes {
+      display: inline-block;
+      background: rgba(94,173,181,.14); color: var(--accent2);
+      padding: 1px 9px; border-radius: 10px; font-size: .8rem;
+    }
+    .tag-no {
+      display: inline-block;
+      background: rgba(184,112,90,.14); color: var(--accent3);
+      padding: 1px 9px; border-radius: 10px; font-size: .8rem;
+    }
+
+    /* conclusion quote */
+    .conclusion-langs p strong { font-size: 1rem; }
+
+    /* Big O table first col */
+    .bigo-table tbody td:first-child { color: var(--accent); font-weight: 500; font-size: .85rem; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 880px) {
+      .page-layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .main-content { padding: 32px 22px; max-width: 100%; }
+      .uses-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 2.4rem; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════ -->
+<header class="site-header">
+  <span class="site-logo">// fundamentos.dev</span>
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="logica">Lógica de Programação</button>
+    <button class="tab-btn"        data-tab="linguagens">Linguagens</button>
+  </nav>
+</header>
+
+<div class="page-layout">
+
+  <!-- ════════ SIDEBAR ════════ -->
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <!-- ════════ MAIN ════════ -->
+  <main class="main-content">
+
+    <!-- ══════════════════════════════════
+         SECTION: LÓGICA DE PROGRAMAÇÃO
+    ══════════════════════════════════════ -->
+    <div id="section-logica" class="section-panel active">
+
+      <h1>Lógica de<br>Programação</h1>
+      <blockquote class="lead-quote">Um guia completo e didático para quem quer entender como o computador pensa — e como você pode pensar como um programador.</blockquote>
+
+      <!-- 1 -->
+      <section id="l-intro">
+        <h2>O que é Lógica de Programação?</h2>
+        <p>Antes de escrever qualquer linha de código, é preciso entender o que você está fazendo: <strong>dar instruções precisas a uma máquina que não tem intuição</strong>.</p>
+        <p>Um computador é incrivelmente rápido, mas literalmente burro. Ele executa exatamente o que você mandar, nem mais, nem menos. Isso significa que <strong>a clareza do seu raciocínio é mais importante do que qualquer linguagem de programação</strong>.</p>
+        <div class="tip">💡 <strong>Analogia:</strong> Pense em uma receita de bolo. Você não diz "coloque farinha suficiente" — você diz "coloque 200g de farinha". Lógica de programação é a arte de transformar intenções vagas em instruções exatas e ordenadas.</div>
+        <p>A lógica de programação é a base que sustenta tudo. Ela não pertence a nenhuma linguagem específica. Aprenda-a bem e você será capaz de aprender qualquer linguagem com facilidade.</p>
+        <p>Os exemplos neste guia serão escritos em <strong>pseudocódigo</strong> e em <strong>Python</strong>, por ser uma linguagem limpa e próxima do português natural.</p>
+      </section>
+
+      <hr class="divider">
+
+      <!-- 2 -->
+      <section id="l-variaveis">
+        <h2>Variáveis e Constantes</h2>
+        <p>Uma <strong>variável</strong> é um nome que aponta para um espaço na memória do computador onde você guarda um valor. Pense nela como uma caixinha com um rótulo.</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">idade = 25
+nome = "Maria"
+altura = 1.68
+esta_chovendo = True</code></pre></div>
+        <p>O valor de uma variável pode mudar ao longo do programa — daí o nome <em>variável</em>:</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">pontuacao = 0
+pontuacao = pontuacao + 10   # agora vale 10
+pontuacao = pontuacao + 5    # agora vale 15</code></pre></div>
+        <p>Uma <strong>constante</strong> é um valor que não deve mudar durante a execução. Em Python, a convenção é escrever em maiúsculas para sinalizar essa intenção:</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">PI = 3.14159
+VELOCIDADE_DA_LUZ = 299_792_458  # m/s
+TAXA_DE_JUROS = 0.05</code></pre></div>
+        <h3>Boas práticas ao nomear variáveis</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>❌ Evite</th><th>✅ Prefira</th></tr></thead>
+          <tbody>
+            <tr><td>x</td><td>velocidade_inicial</td></tr>
+            <tr><td>d</td><td>data_nascimento</td></tr>
+            <tr><td>temp2</td><td>temperatura_media</td></tr>
+            <tr><td>varAuxiliar3</td><td>total_desconto</td></tr>
+          </tbody>
+        </table></div>
+        <div class="tip">O código é lido muito mais vezes do que é escrito. Nomear bem uma variável é um ato de respeito com quem vai ler depois — inclusive você mesmo no futuro.</div>
+      </section>
+
+      <hr class="divider">
+
+      <!-- 3 -->
+      <section id="l-tipos">
+        <h2>Tipos de Dados</h2>
+        <p>Todo valor tem um <strong>tipo</strong>, que determina o que você pode fazer com ele. Somar dois números é diferente de juntar duas palavras.</p>
+        <h3>Tipos Primitivos</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tipo</th><th>Descrição</th><th>Exemplo</th></tr></thead>
+          <tbody>
+            <tr><td>int</td><td>Número inteiro</td><td>42, -7, 0</td></tr>
+            <tr><td>float</td><td>Número decimal</td><td>3.14, -0.5, 2.0</td></tr>
+            <tr><td>str</td><td>Texto (string)</td><td>"olá", "Python"</td></tr>
+            <tr><td>bool</td><td>Verdadeiro ou Falso</td><td>True, False</td></tr>
+          </tbody>
+        </table></div>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python"># Inteiros e floats
+filhos = 3
+preco = 19.99
+
+# Strings: texto entre aspas
+cidade = "São Paulo"
+mensagem = 'Olá, mundo!'
+
+# Booleans: apenas dois valores possíveis
+logado = True
+admin = False</code></pre></div>
+
+        <h3>Tipagem Dinâmica vs. Estática</h3>
+        <p>Python é <strong>dinamicamente tipado</strong>: o tipo é inferido pelo valor. Já linguagens como Java são <strong>estaticamente tipadas</strong>: o tipo deve ser declarado explicitamente.</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python"># Python (dinâmico)
+x = 10       # x é int
+x = "dez"   # agora x é str — válido!</code></pre></div>
+        <div class="code-wrap"><span class="code-lang">java</span>
+<pre><code class="language-java">// Java (estático)
+int x = 10;
+x = "dez";  // ERRO de compilação!</code></pre></div>
+
+        <h3>Conversão de Tipos (Type Casting)</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python"># Usuário digita um texto, mas você precisa do número
+entrada = input("Qual sua idade? ")  # entrada é str
+idade = int(entrada)                 # converte para int
+
+# Converter número para texto
+codigo = 42
+mensagem = "Seu código é: " + str(codigo)
+
+# Cuidado com conversões inválidas!
+valor = int("abc")  # Erro! "abc" não é um número</code></pre></div>
+      </section>
+
+      <hr class="divider">
+
+      <!-- 4 -->
+      <section id="l-operadores">
+        <h2>Operadores</h2>
+        <p>Operadores são os <strong>verbos</strong> da lógica: eles realizam ações sobre os dados.</p>
+        <h3>Aritméticos</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">a = 10
+b = 3
+
+print(a + b)   # 13   → adição
+print(a - b)   # 7    → subtração
+print(a * b)   # 30   → multiplicação
+print(a / b)   # 3.33 → divisão real
+print(a // b)  # 3    → divisão inteira (quociente)
+print(a % b)   # 1    → módulo (resto da divisão)
+print(a ** b)  # 1000 → potenciação</code></pre></div>
+        <div class="tip">💡 <strong>O operador módulo <code>%</code> é muito útil!</strong> Ele responde: "qual o resto quando divido <code>a</code> por <code>b</code>?" Use-o para saber se um número é par (<code>n % 2 == 0</code>), para criar ciclos ou para embrulhar índices.</div>
+
+        <h3>Comparação</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">10 > 5    # True
+10 < 5    # False
+10 == 10  # True  (igual)
+10 != 7   # True  (diferente)
+10 >= 10  # True  (maior ou igual)
+5 <= 3    # False (menor ou igual)</code></pre></div>
+
+        <h3>Lógicos</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python"># AND: ambas precisam ser True
+pode_dirigir = (idade >= 18) and tem_carteira  # True
+
+# OR: pelo menos uma precisa ser True
+pode_pagar = tem_dinheiro or tem_cartao        # True
+
+# NOT: inverte o valor
+esta_aberto = not esta_fechado                 # True</code></pre></div>
+      </section>
+
+      <hr class="divider">
+
+      <!-- 5 -->
+      <section id="l-controle">
+        <h2>Estruturas de Controle</h2>
+        <p>Por padrão, um programa executa linha por linha, de cima para baixo. As estruturas de controle permitem <strong>desviar esse fluxo</strong>: tomar decisões e repetir ações.</p>
+
+        <h3 id="l-condicionais">Condicionais — if, elif, else</h3>
+        <p>A estrutura condicional básica: <strong>"se isso, faça aquilo; senão, faça outra coisa"</strong>.</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">temperatura = 38.5
+
+if temperatura > 39:
+    print("Febre alta! Vá ao médico.")
+elif temperatura > 37.5:
+    print("Febre moderada. Descanse e tome água.")
+elif temperatura > 36:
+    print("Temperatura normal.")
+else:
+    print("Temperatura abaixo do normal. Agasalhe-se.")</code></pre></div>
+        <p><strong>Como o computador lê isso:</strong></p>
+        <ol>
+          <li>Testa a primeira condição. Se for verdadeira, executa o bloco e <strong>pula todo o resto</strong>.</li>
+          <li>Se for falsa, testa a próxima condição (<code>elif</code>).</li>
+          <li>Se nenhuma for verdadeira, executa o <code>else</code>.</li>
+        </ol>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python"># Condicionais aninhadas
+nota = 7.5
+frequencia = 80
+
+if frequencia >= 75:
+    if nota >= 7:
+        print("Aprovado!")
+    elif nota >= 5:
+        print("Recuperação.")
+    else:
+        print("Reprovado por nota.")
+else:
+    print("Reprovado por falta.")</code></pre></div>
+        <div class="warn">⚠️ <strong>Atenção:</strong> condicionais muito aninhadas dificultam a leitura. Quando perceber que está indo fundo demais, pense em reestruturar seu código com funções.</div>
+
+        <h3 id="l-lacos">Laços de Repetição</h3>
+        <h4>while — repete enquanto uma condição for verdadeira</h4>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">contador = 1
+while contador <= 5:
+    print(f"Contagem: {contador}")
+    contador += 1
+
+# Use while quando não sabe de antemão quantas repetições serão necessárias:
+while True:
+    senha = input("Digite sua senha: ")
+    if senha == senha_correta:
+        print("Acesso liberado!")
+        break
+    print("Senha incorreta. Tente novamente.")</code></pre></div>
+
+        <h4>for — repete para cada item de uma sequência</h4>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">frutas = ["maçã", "banana", "laranja", "uva"]
+for fruta in frutas:
+    print(f"Eu gosto de {fruta}.")
+
+# range(início, fim, passo)
+for i in range(1, 11, 2):
+    print(i)  # 1, 3, 5, 7, 9</code></pre></div>
+
+        <h4>break e continue</h4>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python"># break: interrompe o laço imediatamente
+numeros = [7, 3, 11, 4, 9, 2]
+for n in numeros:
+    if n % 2 == 0:
+        print(f"Primeiro par encontrado: {n}")
+        break
+
+# continue: pula para a próxima iteração
+for n in range(10):
+    if n % 2 == 0:
+        continue  # pula os pares
+    print(n)  # 1, 3, 5, 7, 9</code></pre></div>
+      </section>
+
+      <hr class="divider">
+
+      <!-- 6 -->
+      <section id="l-funcoes">
+        <h2>Funções</h2>
+        <p>Uma função é um <strong>bloco de código nomeado</strong> que realiza uma tarefa específica e pode ser reutilizado.</p>
+        <div class="tip">
+          💡 <strong>Por que usar funções?</strong><br>
+          <strong>Reutilização:</strong> escreva uma vez, use várias vezes.<br>
+          <strong>Organização:</strong> divida o problema em partes menores.<br>
+          <strong>Legibilidade:</strong> código com funções bem nomeadas se lê quase como texto.<br>
+          <strong>Manutenção:</strong> para corrigir um bug, basta alterar em um único lugar.
+        </div>
+
+        <h3>Anatomia de uma Função</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">def calcular_media(nota1, nota2, nota3):
+    """Calcula a média aritmética de três notas."""
+    soma = nota1 + nota2 + nota3
+    media = soma / 3
+    return media
+
+resultado = calcular_media(8.0, 7.5, 9.0)
+print(f"Média: {resultado:.2f}")  # Média: 8.17</code></pre></div>
+
+        <h3>Parâmetros e Valor Padrão</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">def saudar(nome, saudacao="Olá"):  # valor padrão
+    return f"{saudacao}, {nome}!"
+
+print(saudar("Ana"))              # Olá, Ana!
+print(saudar("Carlos", "Oi"))    # Oi, Carlos!</code></pre></div>
+
+        <h3>Escopo de Variáveis</h3>
+        <p>Variáveis criadas dentro de uma função <strong>não existem fora dela</strong>. Funções são <strong>caixas pretas</strong> que recebem entradas e produzem saídas, sem interferir no resto do programa.</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">def calcular():
+    resultado = 42  # variável LOCAL
+    return resultado
+
+calcular()
+print(resultado)  # Erro! 'resultado' não existe aqui fora</code></pre></div>
+
+        <h3>Exemplo prático: validador de senha</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">def validar_senha(senha):
+    if len(senha) < 8:
+        return False, "Senha muito curta (mínimo 8 caracteres)"
+
+    tem_numero = any(c.isdigit() for c in senha)
+    if not tem_numero:
+        return False, "Senha deve conter pelo menos um número"
+
+    tem_maiuscula = any(c.isupper() for c in senha)
+    if not tem_maiuscula:
+        return False, "Senha deve conter pelo menos uma letra maiúscula"
+
+    return True, "Senha válida! ✓"
+
+for s in ["abc", "minhasenha", "MinhaSenha1"]:
+    valida, msg = validar_senha(s)
+    print(f"{'✓' if valida else '✗'} '{s}': {msg}")</code></pre></div>
+      </section>
+
+      <hr class="divider">
+
+      <!-- 7 -->
+      <section id="l-recursao">
+        <h2>Recursão</h2>
+        <p>Recursão é quando uma função <strong>chama a si mesma</strong> para resolver um problema. É uma técnica elegante para problemas com <strong>estrutura repetitiva ou autossimilar</strong>.</p>
+        <div class="tip">💡 <strong>Analogia:</strong> Pense em dois espelhos paralelos. A imagem dentro do espelho contém outro espelho que contém outra imagem... Isso é recursão — mas precisamos de um jeito de parar!</div>
+        <p>Toda função recursiva tem dois componentes obrigatórios:</p>
+        <ol>
+          <li><strong>Caso base:</strong> a condição de parada (sem ela, recursão infinita = travamento).</li>
+          <li><strong>Caso recursivo:</strong> a função chamando a si mesma com uma entrada <em>menor</em>.</li>
+        </ol>
+
+        <h3>Fatorial</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">def fatorial(n):
+    if n == 0:              # caso base
+        return 1
+    return n * fatorial(n - 1)  # caso recursivo
+
+print(fatorial(5))  # 120</code></pre></div>
+        <div class="code-wrap"><span class="code-lang">trace</span>
+<pre><code>fatorial(5)
+  = 5 × fatorial(4)
+        = 4 × fatorial(3)
+              = 3 × fatorial(2)
+                    = 2 × fatorial(1)
+                          = 1 × fatorial(0) = 1 ← caso base!
+→  5 × 4 × 3 × 2 × 1  =  120</code></pre></div>
+
+        <h3>Fibonacci</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+for i in range(10):
+    print(fibonacci(i), end=" ")
+# 0 1 1 2 3 5 8 13 21 34</code></pre></div>
+
+        <h3>Recursão vs. Iteração</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th></th><th>Iteração</th><th>Recursão</th></tr></thead>
+          <tbody>
+            <tr><td>Velocidade</td><td>Geralmente mais rápida</td><td>Pode ser mais lenta</td></tr>
+            <tr><td>Memória</td><td>Usa menos memória</td><td>Cada chamada usa a pilha</td></tr>
+            <tr><td>Legibilidade</td><td>Mais verbosa às vezes</td><td>Mais elegante para certos problemas</td></tr>
+            <tr><td>Risco</td><td>Laço infinito</td><td>Stack overflow</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <hr class="divider">
+
+      <!-- 8 -->
+      <section id="l-estruturas">
+        <h2>Estruturas de Dados Básicas</h2>
+        <p>Estruturas de dados são <strong>formas de organizar e armazenar informações</strong> para que possam ser acessadas e modificadas eficientemente.</p>
+
+        <h3 id="l-arrays">Arrays (Vetores)</h3>
+        <p>Uma <strong>coleção ordenada de elementos</strong> acessada por <strong>índice</strong>, começando em 0.</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">alunos = ["Ana", "Bia", "Carlos", "Davi", "Eva"]
+#          [0]    [1]     [2]       [3]    [4]
+
+print(alunos[0])    # "Ana"  — primeiro elemento
+print(alunos[-1])   # "Eva"  — último elemento
+print(alunos[1:3])  # ["Bia", "Carlos"] — fatiamento
+
+alunos.append("Felipe")  # adicionar ao final
+alunos.remove("Bia")     # remover por valor
+print(len(alunos))       # 5</code></pre></div>
+
+        <h3 id="l-pilhas">Pilhas e Filas</h3>
+        <h4>Pilha (Stack) — LIFO: Last In, First Out</h4>
+        <p>O último a entrar é o primeiro a sair. Pense em uma pilha de pratos: você só retira o do topo.</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">pilha = []
+pilha.append("A")   # push
+pilha.append("B")
+pilha.append("C")
+print(pilha)         # ['A', 'B', 'C']
+
+topo = pilha.pop()   # pop → remove do topo
+print(topo)          # 'C'
+
+# Caso de uso: validar parênteses balanceados
+def parenteses_balanceados(expr):
+    pilha = []
+    pares = {')': '(', ']': '[', '}': '{'}
+    for c in expr:
+        if c in '([{':   pilha.append(c)
+        elif c in ')]}':
+            if not pilha or pilha[-1] != pares[c]: return False
+            pilha.pop()
+    return len(pilha) == 0</code></pre></div>
+
+        <h4>Fila (Queue) — FIFO: First In, First Out</h4>
+        <p>O primeiro a entrar é o primeiro a sair. Pense em uma fila de banco.</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">from collections import deque
+
+fila = deque()
+fila.append("João")    # enqueue
+fila.append("Maria")
+fila.append("Pedro")
+
+proximo = fila.popleft()   # dequeue
+print(proximo)  # 'João' — primeiro que entrou</code></pre></div>
+
+        <h3 id="l-dicionarios">Dicionários (Mapas)</h3>
+        <p>Armazena pares de <strong>chave → valor</strong>. O acesso é feito pelo nome (chave), não pela posição.</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">aluno = {
+    "nome": "Lucas",
+    "idade": 20,
+    "notas": [8.5, 9.0, 7.5],
+    "aprovado": True
+}
+
+print(aluno["nome"])         # "Lucas"
+aluno["idade"] = 21          # modificar
+aluno["email"] = "l@mail"   # nova chave
+
+# Frequência de palavras — uso clássico de dicionários
+def contar_palavras(texto):
+    freq = {}
+    for palavra in texto.lower().split():
+        freq[palavra] = freq.get(palavra, 0) + 1
+    return freq</code></pre></div>
+      </section>
+
+      <hr class="divider">
+
+      <!-- 9 -->
+      <section id="l-complexidade">
+        <h2>Noções de Complexidade</h2>
+        <p>Quando você escreve um algoritmo, duas perguntas são fundamentais: <strong>quão rápido ele é?</strong> (complexidade de tempo) e <strong>quanta memória usa?</strong> (complexidade de espaço).</p>
+        <p>A <strong>notação Big O</strong> descreve como o desempenho cresce à medida que a entrada cresce, focando no <strong>pior caso</strong>.</p>
+
+        <div class="table-wrap"><table class="bigo-table">
+          <thead><tr><th>Notação</th><th>Nome</th><th>Exemplo prático</th></tr></thead>
+          <tbody>
+            <tr><td>O(1)</td><td>Constante</td><td>Acessar lista[i]</td></tr>
+            <tr><td>O(log n)</td><td>Logarítmica</td><td>Busca binária</td></tr>
+            <tr><td>O(n)</td><td>Linear</td><td>Percorrer uma lista</td></tr>
+            <tr><td>O(n log n)</td><td>Linearítmica</td><td>Merge Sort</td></tr>
+            <tr><td>O(n²)</td><td>Quadrática</td><td>Bubble Sort, laços aninhados</td></tr>
+            <tr><td>O(2ⁿ)</td><td>Exponencial</td><td>Fibonacci recursivo ingênuo</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>O(log n) — Busca Binária</h3>
+        <p>Cada passo <strong>divide o problema pela metade</strong>. 1.000.000 de elementos → apenas ~20 comparações.</p>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">def busca_binaria(lista_ordenada, alvo):
+    """Funciona apenas em listas ORDENADAS."""
+    esq, dir = 0, len(lista_ordenada) - 1
+
+    while esq <= dir:
+        meio = (esq + dir) // 2
+        if lista_ordenada[meio] == alvo:   return meio
+        elif lista_ordenada[meio] < alvo:  esq = meio + 1
+        else:                              dir = meio - 1
+
+    return -1</code></pre></div>
+
+        <h3>O(n²) — Bubble Sort</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">def bubble_sort(lista):
+    n = len(lista)
+    for i in range(n):           # O(n)
+        for j in range(n - 1):   # O(n) → total: O(n²)
+            if lista[j] > lista[j + 1]:
+                lista[j], lista[j + 1] = lista[j + 1], lista[j]
+    return lista
+
+# 1.000 elementos → ~1.000.000 operações
+# 10.000 elementos → ~100.000.000 operações !</code></pre></div>
+
+        <h3>Memoização — de O(2ⁿ) para O(n)</h3>
+        <div class="code-wrap"><span class="code-lang">python</span>
+<pre><code class="language-python">def fibonacci_memo(n, memo={}):
+    if n in memo:     return memo[n]  # O(1) — já calculado
+    if n <= 1:        return n
+    memo[n] = fibonacci_memo(n-1, memo) + fibonacci_memo(n-2, memo)
+    return memo[n]
+
+print(fibonacci_memo(50))  # Instantâneo!
+# Sem memoização: fibonacci(50) = trilhões de operações</code></pre></div>
+        <div class="tip">🎯 <strong>Regra prática:</strong> Se você ver laços aninhados, suspeite de O(n²) ou pior. Se a entrada pode ser dividida ao meio repetidamente, provavelmente é O(log n) — e isso é ótimo.</div>
+      </section>
+
+      <hr class="divider">
+
+      <!-- 10 -->
+      <section id="l-conclusao">
+        <h2>Conclusão</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Conceito</th><th>O que faz</th></tr></thead>
+          <tbody>
+            <tr><td>Variáveis e Tipos</td><td>Armazenam e classificam dados</td></tr>
+            <tr><td>Operadores</td><td>Manipulam e comparam dados</td></tr>
+            <tr><td>Condicionais</td><td>Tomam decisões</td></tr>
+            <tr><td>Laços</td><td>Repetem ações</td></tr>
+            <tr><td>Funções</td><td>Organizam e reutilizam código</td></tr>
+            <tr><td>Recursão</td><td>Resolvem problemas autossimilares</td></tr>
+            <tr><td>Estruturas de Dados</td><td>Organizam coleções de dados</td></tr>
+            <tr><td>Complexidade</td><td>Medem a eficiência de algoritmos</td></tr>
+          </tbody>
+        </table></div>
+        <p>Esses conceitos formam a <strong>gramática universal da programação</strong>. Toda linguagem — Python, JavaScript, Java, C++, Rust — os implementa de formas ligeiramente diferentes, mas a essência é sempre a mesma.</p>
+        <h3>Próximos Passos</h3>
+        <ol>
+          <li><strong>Orientação a Objetos</strong> — modelar o mundo em classes e objetos</li>
+          <li><strong>Estruturas de Dados Avançadas</strong> — árvores, grafos, heaps</li>
+          <li><strong>Algoritmos Clássicos</strong> — ordenação, busca, grafos</li>
+          <li><strong>Paradigmas</strong> — funcional, reativo, concorrente</li>
+          <li><strong>Sistemas</strong> — memória, processos, redes</li>
+        </ol>
+        <blockquote class="lead-quote" style="margin-top:36px">"Todo expert foi um dia um iniciante. A diferença é que o expert não desistiu quando ficou difícil."</blockquote>
+      </section>
+
+    </div><!-- /section-logica -->
+
+
+    <!-- ══════════════════════════════════
+         SECTION: LINGUAGENS
+    ══════════════════════════════════════ -->
+    <div id="section-linguagens" class="section-panel">
+
+      <h1>Linguagens de<br>Programação</h1>
+      <blockquote class="lead-quote">Um guia aprofundado sobre seis linguagens que definem paradigmas, moldaram a indústria e continuam relevantes — cada uma a seu modo.</blockquote>
+
+      <!-- JAVA -->
+      <section id="lang-java">
+        <div class="lang-card">
+          <div class="lang-header">
+            <div class="lang-bar" style="background:var(--java)"></div>
+            <div class="lang-num">01</div>
+            <div>
+              <div class="lang-name">Java</div>
+              <div class="lang-sub">OO Clássica · Sun Microsystems, 1995 · James Gosling</div>
+              <div class="badges">
+                <span class="badge" style="color:var(--java);border-color:var(--java)">Orientado a Objetos</span>
+                <span class="badge">Tipagem Estática</span>
+                <span class="badge">JVM · Bytecode</span>
+                <span class="badge">GC</span>
+              </div>
+            </div>
+          </div>
+          <div class="lang-body">
+            <div class="section-label">O que é</div>
+            <p>Java é uma linguagem <strong>orientada a objetos, fortemente tipada, compilada para bytecode</strong> e executada sobre a <strong>JVM (Java Virtual Machine)</strong>. Com o princípio central de <em>"Write Once, Run Anywhere"</em>, o mesmo código compilado roda em qualquer plataforma que tenha uma JVM instalada.</p>
+            <p>Seu modelo de OO é considerado <strong>clássico</strong>: encapsulamento, herança, polimorfismo e abstração são cidadãos de primeira classe na linguagem.</p>
+
+            <div class="section-label">Para que serve</div>
+            <ul class="uses-grid">
+              <li class="use-item"><strong>Back-end Corporativo</strong><span>Sistemas bancários, ERPs e e-commerce de grande porte. Spring Boot tornou microsserviços e APIs REST extremamente produtivos.</span></li>
+              <li class="use-item"><strong>Aplicações Android</strong><span>Por anos a linguagem oficial do Android. Bilhões de dispositivos rodam código Java diariamente.</span></li>
+              <li class="use-item"><strong>Big Data & Distribuído</strong><span>Apache Hadoop, Kafka e Spark são escritos em Java/Scala. A JVM provou-se confiável para workloads massivos.</span></li>
+              <li class="use-item"><strong>Alta Disponibilidade</strong><span>LinkedIn e Netflix (partes do back-end) confiam em Java por sua estabilidade e vasto ecossistema de monitoramento.</span></li>
+            </ul>
+
+            <div class="section-label">Curiosidades</div>
+            <button class="cur-toggle" onclick="toggleCur(this)"><span>▶ Ver curiosidades</span></button>
+            <div class="cur-body">
+              <div class="cur-item"><strong>O nome quase foi "Oak"</strong> A linguagem foi originalmente chamada de Oak (carvalho), em referência a uma árvore que Gosling via da janela. Após descobrirem que o nome estava registrado, a equipe brainstormou em uma cafeteria e Java — referência ao café da ilha de Java, na Indonésia — foi escolhido.</div>
+              <div class="cur-item"><strong>Java não foi pensado para a web</strong> O projeto original era voltado para dispositivos eletrônicos embarcados, como TV a cabo interativa. A explosão da web nos anos 90 redirecionou completamente o foco da linguagem.</div>
+              <div class="cur-item"><strong>A JVM virou uma plataforma</strong> Hoje, Kotlin, Scala, Groovy, Clojure e JRuby rodam sobre a JVM. Java criou inadvertidamente uma das plataformas de execução mais ricas da história da computação.</div>
+              <div class="cur-item"><strong>O maior processo judicial da tecnologia</strong> A Oracle processou o Google por uso de APIs do Java no Android, em um caso que durou mais de uma década e envolveu bilhões de dólares. O Google venceu na Suprema Corte dos EUA em 2021.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HASKELL -->
+      <section id="lang-haskell">
+        <div class="lang-card">
+          <div class="lang-header">
+            <div class="lang-bar" style="background:var(--haskell)"></div>
+            <div class="lang-num">02</div>
+            <div>
+              <div class="lang-name">Haskell</div>
+              <div class="lang-sub">Funcional Pura · Comitê Acadêmico, 1990 · Simon Peyton Jones</div>
+              <div class="badges">
+                <span class="badge" style="color:var(--haskell);border-color:var(--haskell)">Funcional Pura</span>
+                <span class="badge">Lazy Evaluation</span>
+                <span class="badge">Tipagem Estática</span>
+                <span class="badge">GC</span>
+              </div>
+            </div>
+          </div>
+          <div class="lang-body">
+            <div class="section-label">O que é</div>
+            <p>Haskell é uma linguagem <strong>puramente funcional, com tipagem estática forte e avaliação lazy (preguiçosa)</strong> por padrão. Criada por um comitê de pesquisadores para consolidar os avanços em linguagens funcionais da época.</p>
+            <p>Haskell abraça a pureza funcional de forma radical: <strong>funções não têm efeitos colaterais</strong>, dados são imutáveis por padrão e o sistema de tipos elimina muitos bugs em tempo de compilação — antes mesmo de o programa rodar.</p>
+
+            <div class="section-label">Para que serve</div>
+            <ul class="uses-grid">
+              <li class="use-item"><strong>Compiladores e Ferramentas</strong><span>O GHC é um dos compiladores mais avançados do mundo. O Pandoc (conversor universal de documentos) é escrito em Haskell.</span></li>
+              <li class="use-item"><strong>Sistemas Financeiros Críticos</strong><span>Standard Chartered, Barclays e Facebook (equipe anti-spam) usam Haskell onde bugs custam muito caro.</span></li>
+              <li class="use-item"><strong>Blockchain</strong><span>A blockchain Cardano tem seu núcleo e linguagem de smart contracts (Plutus) desenvolvidos em Haskell.</span></li>
+              <li class="use-item"><strong>Pesquisa Acadêmica (PLT)</strong><span>Haskell é a linguagem franca de pesquisadores em teoria de linguagens de programação. Novas ideias são prototipadas em Haskell antes de migrarem para outras linguagens.</span></li>
+            </ul>
+
+            <div class="section-label">Curiosidades</div>
+            <button class="cur-toggle" onclick="toggleCur(this)"><span>▶ Ver curiosidades</span></button>
+            <div class="cur-body">
+              <div class="cur-item"><strong>Mônadas não são tão assustadoras</strong> Mônadas são um padrão da teoria das categorias que Haskell usa para modelar efeitos colaterais de forma pura. A piada clássica: <em>"Uma mônada é apenas um monóide na categoria dos endofunctors. Qual é o problema?"</em></div>
+              <div class="cur-item"><strong>Haskell influenciou praticamente tudo</strong> Generics avançados, pattern matching, inferência de tipos (algoritmo Hindley-Milner), type classes e monadic I/O foram pioneiros em Haskell antes de chegarem ao Rust, Swift, Kotlin, Scala e C++.</div>
+              <div class="cur-item"><strong>Avaliação lazy como padrão</strong> Haskell não avalia expressões até que o resultado seja necessário. Isso permite trabalhar com estruturas <strong>infinitas</strong> — como uma lista de todos os números primos — sem travar o programa.</div>
+              <div class="cur-item"><strong>Named after a logician</strong> A linguagem recebeu o nome de <strong>Haskell Brooks Curry</strong>, matemático cujo trabalho em lógica combinatória e lambda cálculo é a base teórica da programação funcional.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PYTHON -->
+      <section id="lang-python">
+        <div class="lang-card">
+          <div class="lang-header">
+            <div class="lang-bar" style="background:var(--python)"></div>
+            <div class="lang-num">03</div>
+            <div>
+              <div class="lang-name">Python</div>
+              <div class="lang-sub">Scripting & Além · Guido van Rossum, 1991</div>
+              <div class="badges">
+                <span class="badge" style="color:var(--python);border-color:var(--python)">Multiparadigma</span>
+                <span class="badge">Tipagem Dinâmica</span>
+                <span class="badge">Interpretada</span>
+                <span class="badge">GC</span>
+              </div>
+            </div>
+          </div>
+          <div class="lang-body">
+            <div class="section-label">O que é</div>
+            <p>Python é uma linguagem <strong>interpretada, dinamicamente tipada e multiparadigma</strong>, com sintaxe minimalista projetada para ser <strong>legível como pseudocódigo</strong>. Adota o princípio das <em>"baterias inclusas"</em> (batteries included): biblioteca padrão vastíssima e um ecossistema de pacotes (PyPI) com mais de 500 mil projetos.</p>
+
+            <div class="section-label">Para que serve</div>
+            <ul class="uses-grid">
+              <li class="use-item"><strong>Ciência de Dados & ML</strong><span>NumPy, Pandas, Scikit-learn, TensorFlow, PyTorch e Jupyter Notebooks são ferramentas universais de data scientists ao redor do mundo.</span></li>
+              <li class="use-item"><strong>Automação & Scripting</strong><span>DevOps e sysadmins usam Python para automatizar tarefas: deploy, web scraping (BeautifulSoup, Scrapy), integração de sistemas.</span></li>
+              <li class="use-item"><strong>Desenvolvimento Web</strong><span>Django (Instagram, Pinterest) e FastAPI tornam Python uma escolha sólida para back-end web.</span></li>
+              <li class="use-item"><strong>Computação Científica</strong><span>Substituiu MATLAB em muitos laboratórios. A imagem do buraco negro M87 foi processada com código Python.</span></li>
+            </ul>
+
+            <div class="section-label">Curiosidades</div>
+            <button class="cur-toggle" onclick="toggleCur(this)"><span>▶ Ver curiosidades</span></button>
+            <div class="cur-body">
+              <div class="cur-item"><strong>O nome não vem de cobra</strong> Guido van Rossum escolheu o nome Python em referência ao grupo de comédia britânico <em>Monty Python's Flying Circus</em>, do qual era fã. O logo com cobras veio depois.</div>
+              <div class="cur-item"><strong>Guido como "BDFL"</strong> Van Rossum detinha o título de <em>Benevolent Dictator For Life</em> da linguagem. Renunciou ao cargo em 2018 após uma polêmica sobre o PEP 572 (operador walrus <code>:=</code>).</div>
+              <div class="cur-item"><strong>Python é lento — e não se importa</strong> Python puro é significativamente mais lento que C ou Java. Mas a comunidade resolveu pragmaticamente: os gargalos são escritos em C (NumPy é essencialmente C com interface Python).</div>
+              <div class="cur-item"><strong>Indentação obrigatória como filosofia</strong> Em Python, o recuo é parte da sintaxe. Isso foi controverso, mas garantiu que todo código Python visualmente legível também seja sintaticamente correto.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- C -->
+      <section id="lang-c">
+        <div class="lang-card">
+          <div class="lang-header">
+            <div class="lang-bar" style="background:var(--clang)"></div>
+            <div class="lang-num">04</div>
+            <div>
+              <div class="lang-name">C</div>
+              <div class="lang-sub">Linguagem de Sistema · Dennis Ritchie, Bell Labs, 1972</div>
+              <div class="badges">
+                <span class="badge" style="color:var(--clang);border-color:var(--clang)">Procedural</span>
+                <span class="badge">Baixo Nível</span>
+                <span class="badge">Ponteiros</span>
+                <span class="badge">Sem GC</span>
+              </div>
+            </div>
+          </div>
+          <div class="lang-body">
+            <div class="section-label">O que é</div>
+            <p>C é uma linguagem <strong>imperativa, procedural e de baixo nível</strong>, criada originalmente para escrever o sistema operacional Unix. É considerada a "mãe" das linguagens modernas — C++, Java, C#, Go, Rust e Python são herdeiros diretos ou indiretos de sua filosofia.</p>
+            <p>C opera <strong>muito próximo ao hardware</strong>: o programador controla manualmente a alocação e liberação de memória, pode manipular ponteiros diretamente e tem controle fino sobre como os dados são representados.</p>
+
+            <div class="section-label">Para que serve</div>
+            <ul class="uses-grid">
+              <li class="use-item"><strong>Sistemas Operacionais</strong><span>O kernel do Linux, o Windows NT e o macOS (XNU) são escritos predominantemente em C. O próprio Unix foi reescrito em C — um evento revolucionário.</span></li>
+              <li class="use-item"><strong>Embarcados & Firmware</strong><span>Microcontroladores em automóveis, marca-passos e aviação rodam firmware em C. Quando recursos são contados em kilobytes, C é a escolha natural.</span></li>
+              <li class="use-item"><strong>Compiladores e Runtimes</strong><span>CPython (Python), o runtime do PHP, o interpretador do Ruby — todos escritos em C. A linguagem que roda outras linguagens.</span></li>
+              <li class="use-item"><strong>Bancos de Dados</strong><span>PostgreSQL, SQLite e MySQL são escritos em C. Bancos precisam de desempenho máximo e controle preciso de memória.</span></li>
+            </ul>
+
+            <div class="section-label">Curiosidades</div>
+            <button class="cur-toggle" onclick="toggleCur(this)"><span>▶ Ver curiosidades</span></button>
+            <div class="cur-body">
+              <div class="cur-item"><strong>C e Unix nasceram juntos</strong> Dennis Ritchie criou C especificamente para reescrever o Unix em uma linguagem portável. Pela primeira vez, um SO podia rodar em diferentes arquiteturas de hardware.</div>
+              <div class="cur-item"><strong>Hello, World!</strong> O famoso <code>printf("Hello, World!\n")</code> foi popularizado pelo livro "The C Programming Language" (Kernighan & Ritchie, 1978) e tornou-se o ritual de iniciação universal de qualquer programador.</div>
+              <div class="cur-item"><strong>A origem do null pointer</strong> Tony Hoare, inventor do null em ALGOL, chamou a criação de <em>"seu erro de um bilhão de dólares"</em>. C herdou o conceito e o transformou em um dos bugs mais perigosos da história do software.</div>
+              <div class="cur-item"><strong>C tem 50+ anos e ainda é top 2</strong> Consistentemente ranqueada entre as duas linguagens mais usadas no índice TIOBE, C desafia a obsolescência. Nenhuma linguagem surgiu que ofereça a mesma combinação de portabilidade, desempenho e controle.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TYPESCRIPT -->
+      <section id="lang-typescript">
+        <div class="lang-card">
+          <div class="lang-header">
+            <div class="lang-bar" style="background:var(--ts)"></div>
+            <div class="lang-num">05</div>
+            <div>
+              <div class="lang-name">TypeScript</div>
+              <div class="lang-sub">Web & Mobile · Microsoft, 2012 · Anders Hejlsberg</div>
+              <div class="badges">
+                <span class="badge" style="color:var(--ts);border-color:var(--ts)">Superset de JS</span>
+                <span class="badge">Tipagem Gradual</span>
+                <span class="badge">Transpilada</span>
+                <span class="badge">GC (JS)</span>
+              </div>
+            </div>
+          </div>
+          <div class="lang-body">
+            <div class="section-label">O que é</div>
+            <p>TypeScript é um <strong>superset tipado de JavaScript</strong>, desenvolvido pela Microsoft para resolver o maior problema do JS em escala: <strong>a ausência de tipos estáticos</strong>. Todo código JavaScript válido é também TypeScript válido.</p>
+            <p>TypeScript adiciona interfaces, enums, generics e um sistema de tipos estrutural extremamente poderoso. O compilador (<code>tsc</code>) transpila TypeScript para JavaScript puro, que roda em qualquer ambiente.</p>
+
+            <div class="section-label">Para que serve</div>
+            <ul class="uses-grid">
+              <li class="use-item"><strong>Web de Grande Escala</strong><span>Angular, React (com TS) e Vue 3 têm suporte de primeira classe. Slack, Airbnb e Asana migraram suas bases de código para TypeScript.</span></li>
+              <li class="use-item"><strong>Back-end Node.js</strong><span>NestJS e Deno (que usa TS nativamente) tornaram o desenvolvimento back-end com TypeScript uma realidade madura e produtiva.</span></li>
+              <li class="use-item"><strong>Aplicativos Mobile</strong><span>React Native com TypeScript é uma das principais stacks para mobile multiplataforma. O app Discord para mobile é construído com essa combinação.</span></li>
+              <li class="use-item"><strong>Monorepos Full-Stack</strong><span>A capacidade de compartilhar tipos entre front-end e back-end no mesmo repositório é uma vantagem enorme em times grandes.</span></li>
+            </ul>
+
+            <div class="section-label">Curiosidades</div>
+            <button class="cur-toggle" onclick="toggleCur(this)"><span>▶ Ver curiosidades</span></button>
+            <div class="cur-body">
+              <div class="cur-item"><strong>Anders Hejlsberg é um gênio serial</strong> O arquiteto do TypeScript também projetou o Turbo Pascal nos anos 80, o Delphi nos 90 e o C# nos 2000. TypeScript é a quarta linguagem transformadora de sua carreira.</div>
+              <div class="cur-item"><strong>TypeScript não roda diretamente</strong> Ao contrário de Java ou Python, TypeScript nunca é "executado". É sempre compilado para JavaScript. O TypeScript existe inteiramente em <em>compile time</em> — em runtime, só existe JavaScript.</div>
+              <div class="cur-item"><strong>O sistema de tipos é Turing-completo</strong> O sistema de tipos do TypeScript é tão expressivo que é possível escrever algoritmos complexos usando apenas tipos. Há implementações de verificadores de Sudoku e emuladores de máquina de Turing apenas no sistema de tipos.</div>
+              <div class="cur-item"><strong>O maior repositório de tipos do mundo</strong> O projeto DefinitelyTyped no GitHub contém definições de tipos TypeScript para mais de 8.000 bibliotecas JavaScript que não foram escritas em TS. Uma das maiores contribuições colaborativas open-source.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ZIG -->
+      <section id="lang-zig">
+        <div class="lang-card">
+          <div class="lang-header">
+            <div class="lang-bar" style="background:var(--zig)"></div>
+            <div class="lang-num">06</div>
+            <div>
+              <div class="lang-name">Zig</div>
+              <div class="lang-sub">Emergente & Nicho · Andrew Kelley, 2015</div>
+              <div class="badges">
+                <span class="badge" style="color:var(--zig);border-color:var(--zig)">Imperativa</span>
+                <span class="badge">Baixo Nível</span>
+                <span class="badge">Sem GC</span>
+                <span class="badge">comptime</span>
+              </div>
+            </div>
+          </div>
+          <div class="lang-body">
+            <div class="section-label">O que é</div>
+            <p>Zig é uma linguagem de sistemas <strong>imperativa, compilada e de baixo nível</strong>, criada com o objetivo de ser um substituto moderno para C: <strong>sem macros, sem pré-processador, sem exceções, sem runtime oculto</strong> — apenas código simples, previsível e extremamente eficiente.</p>
+            <p>Zig não é apenas uma linguagem — é também um <strong>toolchain</strong>: seu compilador consegue compilar código C e C++ e serve como um cross-compiler de alta qualidade.</p>
+
+            <div class="section-label">Para que serve</div>
+            <ul class="uses-grid">
+              <li class="use-item"><strong>Sistemas & Embarcados</strong><span>Compete diretamente com C em firmware, kernels e sistemas de baixo nível. Sem GC, sem runtime, sem surpresas — o programador vê exatamente o que acontece.</span></li>
+              <li class="use-item"><strong>Substituição de C</strong><span>Zig pode importar headers C diretamente com <code>@cImport</code> sem bindings manuais, permitindo reescrever projetos C incrementalmente.</span></li>
+              <li class="use-item"><strong>Cross-Compilation</strong><span>O Bun (runtime JavaScript ultrarrápido) usa Zig como toolchain para compilar para múltiplas plataformas simultaneamente.</span></li>
+              <li class="use-item"><strong>Game Development</strong><span>A leveza e o controle de Zig atraem desenvolvedores de engines que precisam de desempenho máximo sem o overhead de C++.</span></li>
+            </ul>
+
+            <div class="section-label">Curiosidades</div>
+            <button class="cur-toggle" onclick="toggleCur(this)"><span>▶ Ver curiosidades</span></button>
+            <div class="cur-body">
+              <div class="cur-item"><strong>comptime é revolucionário</strong> A feature mais distintiva de Zig: qualquer código Zig pode ser executado em tempo de compilação. Isso elimina a necessidade de templates, macros e metaprogramação complexa.</div>
+              <div class="cur-item"><strong>Sem exceções por design</strong> Zig usa union types de erro (<code>!T</code>) — funções que podem falhar retornam um tipo que obriga o chamador a tratar o erro explicitamente. Mais honesto que C e mais simples que Rust.</div>
+              <div class="cur-item"><strong>Bun: o caso de uso mais famoso</strong> O Bun, runtime JavaScript que compete com Node.js prometendo velocidades 3-4x maiores, é escrito majoritariamente em Zig. Foi o que colocou Zig no radar da comunidade de desenvolvimento web.</div>
+              <div class="cur-item"><strong>A filosofia "No hidden control flow"</strong> Zig proíbe sobrecarga de operadores e qualquer mecanismo que esconda complexidade. Se algo acontece, você deve poder vê-lo explicitamente no código-fonte — uma resposta direta às críticas ao C++ e Rust.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COMPARATIVO -->
+      <section id="lang-comparativo">
+        <h2>Comparativo Rápido</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Linguagem</th><th>Paradigma</th><th>Tipagem</th><th>GC</th><th>Nível</th><th>Ponto Forte</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--java);font-family:var(--font-mono)">Java</td>
+              <td>OO</td><td>Estática forte</td>
+              <td><span class="tag-yes">Sim</span></td>
+              <td>Alto</td><td>Ecossistema corporativo</td>
+            </tr>
+            <tr>
+              <td style="color:var(--haskell);font-family:var(--font-mono)">Haskell</td>
+              <td>Funcional pura</td><td>Estática forte</td>
+              <td><span class="tag-yes">Sim</span></td>
+              <td>Alto</td><td>Correção formal</td>
+            </tr>
+            <tr>
+              <td style="color:var(--python);font-family:var(--font-mono)">Python</td>
+              <td>Multiparadigma</td><td>Dinâmica</td>
+              <td><span class="tag-yes">Sim</span></td>
+              <td>Alto</td><td>Versatilidade e velocidade</td>
+            </tr>
+            <tr>
+              <td style="color:var(--clang);font-family:var(--font-mono)">C</td>
+              <td>Procedural</td><td>Estática fraca</td>
+              <td><span class="tag-no">Não</span></td>
+              <td>Baixo</td><td>Desempenho e controle</td>
+            </tr>
+            <tr>
+              <td style="color:var(--ts);font-family:var(--font-mono)">TypeScript</td>
+              <td>Multiparadigma</td><td>Estática gradual</td>
+              <td><span class="tag-yes">Sim (JS)</span></td>
+              <td>Alto</td><td>Web em escala</td>
+            </tr>
+            <tr>
+              <td style="color:var(--zig);font-family:var(--font-mono)">Zig</td>
+              <td>Imperativa</td><td>Estática forte</td>
+              <td><span class="tag-no">Não</span></td>
+              <td>Baixo</td><td>Substituto moderno do C</td>
+            </tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <!-- CONCLUSÃO -->
+      <section id="lang-conclusao" class="conclusion-langs">
+        <h2>Conclusão</h2>
+        <p>Não existe linguagem perfeita — existe a linguagem <strong>certa para o problema certo</strong>.</p>
+        <p>
+          <strong style="color:var(--java)">Java</strong> garante que sistemas bancários rodem há décadas sem surpresas.
+          <strong style="color:var(--haskell)">Haskell</strong> garante que código compilado seja matematicamente correto.
+          <strong style="color:var(--python)">Python</strong> garante que uma ideia saia do papel em minutos.
+          <strong style="color:var(--clang)">C</strong> garante que o firmware do seu carro responda em microssegundos.
+          <strong style="color:var(--ts)">TypeScript</strong> garante que uma equipe de 200 engenheiros não quebre a produção ao refatorar.
+          E <strong style="color:var(--zig)">Zig</strong> garante que a próxima geração de ferramentas de sistema seja tão rápida quanto C, mas sem seus fantasmas históricos.
+        </p>
+        <blockquote class="lead-quote" style="margin-top:36px">Conhecer os paradigmas por trás de cada linguagem é mais valioso do que decorar sua sintaxe — pois os paradigmas migram, se influenciam e reaparecem em novas formas ao longo de toda a história da computação.</blockquote>
+      </section>
+
+    </div><!-- /section-linguagens -->
+
+  </main>
+</div><!-- /page-layout -->
+
+
+<script>
+  // ── TOC DATA ──────────────────────────────────────────────
+  const tocData = {
+    logica: [
+      { id:'l-intro',       label:'O que é Lógica?' },
+      { id:'l-variaveis',   label:'Variáveis e Constantes' },
+      { id:'l-tipos',       label:'Tipos de Dados' },
+      { id:'l-operadores',  label:'Operadores' },
+      { id:'l-controle',    label:'Estruturas de Controle', children:[
+        { id:'l-condicionais', label:'Condicionais' },
+        { id:'l-lacos',        label:'Laços de Repetição' },
+      ]},
+      { id:'l-funcoes',     label:'Funções' },
+      { id:'l-recursao',    label:'Recursão' },
+      { id:'l-estruturas',  label:'Estruturas de Dados', children:[
+        { id:'l-arrays',       label:'Arrays (Vetores)' },
+        { id:'l-pilhas',       label:'Pilhas e Filas' },
+        { id:'l-dicionarios',  label:'Dicionários' },
+      ]},
+      { id:'l-complexidade', label:'Complexidade (Big O)' },
+      { id:'l-conclusao',    label:'Conclusão' },
+    ],
+    linguagens: [
+      { id:'lang-java',       label:'Java — OO Clássica' },
+      { id:'lang-haskell',    label:'Haskell — Funcional Pura' },
+      { id:'lang-python',     label:'Python — Scripting & Além' },
+      { id:'lang-c',          label:'C — Linguagem de Sistema' },
+      { id:'lang-typescript', label:'TypeScript — Web & Mobile' },
+      { id:'lang-zig',        label:'Zig — Emergente & Nicho' },
+      { id:'lang-comparativo',label:'Comparativo Rápido' },
+      { id:'lang-conclusao',  label:'Conclusão' },
+    ]
+  };
+
+  function buildTOC(tab) {
+    const sidebar = document.getElementById('sidebar');
+    let h = `<div class="sidebar-label">Índice</div><ul class="toc-list">`;
+    for (const item of tocData[tab]) {
+      h += `<li><a href="#${item.id}" class="toc-link">${item.label}</a>`;
+      if (item.children) {
+        h += `<ul class="toc-sub">`;
+        for (const c of item.children)
+          h += `<li><a href="#${c.id}" class="toc-link">${c.label}</a></li>`;
+        h += `</ul>`;
+      }
+      h += `</li>`;
+    }
+    h += `</ul>`;
+    sidebar.innerHTML = h;
+  }
+
+  // ── TAB SWITCH ────────────────────────────────────────────
+  let activeTab = 'logica';
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const panels  = document.querySelectorAll('.section-panel');
+
+  tabBtns.forEach(btn => btn.addEventListener('click', () => {
+    activeTab = btn.dataset.tab;
+    tabBtns.forEach(b => b.classList.toggle('active', b === btn));
+    panels.forEach(p => p.classList.toggle('active', p.id === `section-${activeTab}`));
+    buildTOC(activeTab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }));
+
+  // ── ACTIVE TOC ON SCROLL ──────────────────────────────────
+  function updateTOC() {
+    const secs = document.querySelectorAll(`#section-${activeTab} section[id], #section-${activeTab} h3[id]`);
+    let cur = '';
+    secs.forEach(s => {
+      if (s.getBoundingClientRect().top <= 90) cur = s.id;
+    });
+    document.querySelectorAll('.toc-link').forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === `#${cur}`);
+    });
+  }
+  window.addEventListener('scroll', updateTOC, { passive: true });
+
+  // ── CURIOSITIES TOGGLE ────────────────────────────────────
+  function toggleCur(btn) {
+    const body = btn.nextElementSibling;
+    const open = body.classList.toggle('open');
+    btn.querySelector('span').textContent = open ? '▼ Ocultar curiosidades' : '▶ Ver curiosidades';
+  }
+
+  // ── INIT ──────────────────────────────────────────────────
+  buildTOC('logica');
+  document.addEventListener('DOMContentLoaded', () => hljs.highlightAll());
+  hljs.highlightAll();
+</script>
+</body>
+</html>

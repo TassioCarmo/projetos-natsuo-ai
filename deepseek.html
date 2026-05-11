@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia Completo: Lógica de Programação & Linguagens</title>
+    <!-- highlight.js para coloração de sintaxe -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+        :root {
+            --bg: #fafbfc;
+            --surface: #ffffff;
+            --surface-alt: #f1f5f9;
+            --text: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --primary-dark: #1d4ed8;
+            --accent: #7c3aed;
+            --accent-light: #ede9fe;
+            --code-bg: #282c34;
+            --code-text: #abb2bf;
+            --code-border: #3a3f4b;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --info: #0ea5e9;
+            --info-light: #e0f2fe;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+            --radius-sm: 6px;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --transition: 0.2s ease;
+            --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', 'Consolas', 'Monaco', monospace;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+    }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.75;
+            display: flex;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: #0f172a;
+            color: #cbd5e1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #1e293b;
+            scrollbar-width: thin;
+            scrollbar-color: #334155 transparent;
+        }
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        .sidebar-brand {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid #1e293b;
+            position: sticky;
+            top: 0;
+            background: #0f172a;
+            z-index: 5;
+        }
+        .sidebar-brand .logo {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .sidebar-brand .logo .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 0;
+        }
+        .sidebar-nav .nav-group {
+            margin-bottom: 8px;
+        }
+        .sidebar-nav .nav-group-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            padding: 8px 20px 6px;
+            font-weight: 600;
+        }
+        .sidebar-nav a {
+            display: block;
+            padding: 7px 20px 7px 24px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.875rem;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .sidebar-nav a:hover {
+            color: #e2e8f0;
+            background: rgba(255,255,255,0.03);
+            border-left-color: #475569;
+        }
+        .sidebar-nav a.active {
+            color: #fff;
+            background: rgba(37,99,235,0.15);
+            border-left-color: #2563eb;
+            font-weight: 500;
+        }
+        .sidebar-nav .nav-sub a {
+            font-size: 0.75rem;
+            padding-left: 36px;
+        }
+        .sidebar-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #1e293b;
+            font-size: 0.75rem;
+            color: #475569;
+            text-align: center;
+        }
+
+        /* MOBILE NAV */
+        .mobile-nav-wrapper {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 200;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+        }
+        .mobile-nav-wrapper details {
+            width: 100%;
+        }
+        .mobile-nav-wrapper summary {
+            padding: 14px 20px;
+            font-weight: 600;
+            color: #f1f5f9;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mobile-nav-wrapper summary::after {
+            content: '▾';
+            margin-left: auto;
+            color: #94a3b8;
+        }
+        .mobile-nav-wrapper details[open] summary::after {
+            transform: rotate(180deg);
+        }
+        .mobile-nav-inner {
+            padding: 8px 16px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .mobile-nav-inner .nav-group-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            padding: 10px 4px 4px;
+            font-weight: 600;
+        }
+        .mobile-nav-inner a {
+            display: block;
+            padding: 8px 12px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.875rem;
+            border-radius: 6px;
+        }
+        .mobile-nav-inner a:hover {
+            color: #e2e8f0;
+            background: rgba(255,255,255,0.04);
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            min-width: 0;
+        }
+        .content-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 32px 64px;
+            width: 100%;
+        }
+
+        /* HERO */
+        .hero {
+            background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #1a1a2e 100%);
+            color: #f1f5f9;
+            padding: 56px 32px 48px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -100px; right: -100px;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -120px; left: -80px;
+            width: 350px; height: 350px;
+            background: radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .hero-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+        .hero .hero-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+        }
+        .hero h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            line-height: 1.2;
+            margin-bottom: 16px;
+        }
+        .hero h1 .gradient-text {
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            font-size: 1.125rem;
+            color: #94a3b8;
+            max-width: 600px;
+            margin: 0 auto 28px;
+        }
+        .hero .hero-links {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .hero .hero-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 22px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-decoration: none;
+        }
+        .hero .btn-primary {
+            background: #2563eb;
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(37,99,235,0.35);
+        }
+        .hero .btn-outline {
+            background: transparent;
+            color: #e2e8f0;
+            border: 1.5px solid rgba(255,255,255,0.25);
+        }
+
+        /* SECTIONS */
+        .section {
+            padding: 48px 0 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        .section:last-child { border-bottom: none; }
+        .section-header { margin-bottom: 32px; }
+        .section-header .section-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+        .section-icon.logic { background: #dbeafe; color: #2563eb; }
+        .section-icon.langs { background: #ede9fe; color: #7c3aed; }
+        .section-header h2 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+        }
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            margin-top: 8px;
+            max-width: 650px;
+        }
+
+        /* SUBSECTIONS */
+        .subsection {
+            margin-bottom: 36px;
+            padding: 24px 28px;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: box-shadow 0.2s;
+        }
+        .subsection:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
+        .subsection h3 {
+            font-size: 1.25rem;
+            font-weight: 650;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .subsection h3 .dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dot.blue { background: #2563eb; }
+        .dot.purple { background: #7c3aed; }
+        .dot.green { background: #10b981; }
+        .dot.orange { background: #f59e0b; }
+        .subsection h4 {
+            font-weight: 600;
+            color: #334155;
+            margin: 16px 0 6px;
+        }
+        .subsection p, .subsection li {
+            color: var(--text-secondary);
+        }
+
+        /* CODE BLOCKS (highlight.js sobreescreve fundo) */
+        .code-block {
+            margin: 16px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            border: 1px solid var(--code-border);
+        }
+        .code-block .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: #21252b;
+            border-bottom: 1px solid #3a3f4b;
+            font-size: 0.75rem;
+            color: #abb2bf;
+            font-family: var(--font-sans);
+        }
+        .code-block .code-header .lang-tag {
+            background: #3a3f4b;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #cbd5e1;
+        }
+        .code-block pre {
+            margin: 0;
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            line-height: 1.65;
+            background: #282c34;
+            overflow-x: auto;
+        }
+        .code-block pre code {
+            font-family: inherit;
+            background: none;
+            padding: 0;
+        }
+
+        /* INLINE CODE */
+        code:not(pre code) {
+            background: #f1f5f9;
+            color: #1e293b;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.85em;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* TABLES */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 16px 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            background: #fff;
+        }
+        thead {
+            background: #f8fafc;
+            border-bottom: 2px solid var(--border);
+        }
+        thead th {
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 650;
+            color: #334155;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-secondary);
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #f8fafc; }
+        tbody td:first-child { font-weight: 500; color: #1e293b; }
+
+        /* CALLOUTS */
+        .callout {
+            margin: 20px 0;
+            padding: 18px 22px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+            background: #dbeafe;
+            color: #1e3a5f;
+            font-size: 0.875rem;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .callout.warning {
+            border-left-color: #f59e0b;
+            background: #fef3c7;
+            color: #6d3a00;
+        }
+        .callout.danger {
+            border-left-color: #ef4444;
+            background: #fee2e2;
+            color: #5c1a1a;
+        }
+        .callout.success {
+            border-left-color: #10b981;
+            background: #d1fae5;
+            color: #0a3d2e;
+        }
+        .callout-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+
+        /* LANGUAGE CARDS */
+        .lang-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 28px 0;
+        }
+        .lang-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .lang-card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .lang-card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 10px;
+        }
+        .lang-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+        .lang-icon.java { background: #fef3c7; color: #d97706; }
+        .lang-icon.haskell { background: #ede9fe; color: #7c3aed; }
+        .lang-icon.python { background: #d1fae5; color: #059669; }
+        .lang-icon.c { background: #fee2e2; color: #dc2626; }
+        .lang-icon.typescript { background: #dbeafe; color: #2563eb; }
+        .lang-icon.zig { background: #ffedd5; color: #ea580c; }
+        .lang-name { font-size: 1.25rem; font-weight: 700; }
+        .lang-tagline { font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
+        .lang-brief { color: #475569; font-size: 0.875rem; margin-bottom: 12px; }
+        .lang-card details {
+            margin-top: auto;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 12px;
+        }
+        .lang-card details summary {
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #2563eb;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .lang-card details summary::after {
+            content: '▸';
+            margin-left: 4px;
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+        .lang-card details[open] summary::after { transform: rotate(90deg); }
+        .lang-details { margin-top: 10px; font-size: 0.875rem; color: #475569; }
+        .lang-details h5 {
+            font-size: 0.75rem; text-transform: uppercase;
+            letter-spacing: 0.5px; color: #64748b;
+            margin: 10px 0 4px;
+        }
+        .lang-details ul { margin: 4px 0 8px 16px; }
+        .lang-details li { margin-bottom: 4px; }
+
+        /* BACK TO TOP */
+        .back-to-top {
+            position: fixed;
+            bottom: 28px; right: 28px;
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            background: #0f172a; color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.15);
+            z-index: 50;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+        .back-to-top:hover {
+            background: #2563eb;
+            transform: translateY(-3px);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .lang-grid { grid-template-columns: 1fr; }
+            .sidebar { width: 240px; }
+            .main-content { margin-left: 240px; }
+            .hero h1 { font-size: 2rem; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .mobile-nav-wrapper { display: block; }
+            .main-content { margin-left: 0; padding-top: 52px; }
+            .hero { padding: 40px 20px; }
+            .hero h1 { font-size: 1.6rem; }
+            .content-container { padding: 16px; }
+            .subsection { padding: 18px 16px; }
+            .lang-grid { grid-template-columns: 1fr; gap: 14px; }
+            table { font-size: 0.75rem; }
+            .code-block pre { font-size: 0.8rem; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <a href="#top" class="logo">
+            <span class="icon">{ }</span>
+            <span>Guia de Programação</span>
+        </a>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-group">
+            <div class="nav-group-title">🧠 Lógica de Programação</div>
+            <a href="#logica">Visão Geral</a>
+            <div class="nav-sub">
+                <a href="#logica-variaveis">Variáveis e Tipos</a>
+                <a href="#logica-operadores">Operadores</a>
+                <a href="#logica-controle">Estruturas de Controle</a>
+                <a href="#logica-funcoes">Funções</a>
+                <a href="#logica-recursao">Recursão</a>
+                <a href="#logica-estruturas">Estruturas de Dados</a>
+                <a href="#logica-complexidade">Complexidade</a>
+            </div>
+        </div>
+        <div class="nav-group">
+            <div class="nav-group-title">💻 Linguagens de Programação</div>
+            <a href="#linguagens">Visão Geral</a>
+            <div class="nav-sub">
+                <a href="#lang-java">☕ Java</a>
+                <a href="#lang-haskell">λ Haskell</a>
+                <a href="#lang-python">🐍 Python</a>
+                <a href="#lang-c">⚙️ C</a>
+                <a href="#lang-typescript">🔷 TypeScript</a>
+                <a href="#lang-zig">⚡ Zig</a>
+            </div>
+        </div>
+    </nav>
+    <div class="sidebar-footer">Material de Estudo · 2026</div>
+</aside>
+
+<div class="mobile-nav-wrapper">
+    <details id="mobile-nav-details">
+        <summary>📑 Navegação do Guia</summary>
+        <div class="mobile-nav-inner">
+            <div class="nav-group-title">🧠 Lógica de Programação</div>
+            <a href="#logica" onclick="closeMobileNav()">Visão Geral</a>
+            <a href="#logica-variaveis" onclick="closeMobileNav()">Variáveis e Tipos</a>
+            <a href="#logica-operadores" onclick="closeMobileNav()">Operadores</a>
+            <a href="#logica-controle" onclick="closeMobileNav()">Estruturas de Controle</a>
+            <a href="#logica-funcoes" onclick="closeMobileNav()">Funções</a>
+            <a href="#logica-recursao" onclick="closeMobileNav()">Recursão</a>
+            <a href="#logica-estruturas" onclick="closeMobileNav()">Estruturas de Dados</a>
+            <a href="#logica-complexidade" onclick="closeMobileNav()">Complexidade</a>
+            <div class="nav-group-title">💻 Linguagens de Programação</div>
+            <a href="#linguagens" onclick="closeMobileNav()">Visão Geral</a>
+            <a href="#lang-java" onclick="closeMobileNav()">☕ Java</a>
+            <a href="#lang-haskell" onclick="closeMobileNav()">λ Haskell</a>
+            <a href="#lang-python" onclick="closeMobileNav()">🐍 Python</a>
+            <a href="#lang-c" onclick="closeMobileNav()">⚙️ C</a>
+            <a href="#lang-typescript" onclick="closeMobileNav()">🔷 TypeScript</a>
+            <a href="#lang-zig" onclick="closeMobileNav()">⚡ Zig</a>
+        </div>
+    </details>
+</div>
+
+<main class="main-content" id="top">
+
+    <section class="hero">
+        <div class="hero-inner">
+            <span class="hero-badge">📘 Material Completo de Estudo</span>
+            <h1>Domine a <span class="gradient-text">Lógica</span> e as <span class="gradient-text">Linguagens</span> de Programação</h1>
+            <p>Do raciocínio computacional fundamental às linguagens que moldam a indústria — com exemplos reais e coloração de sintaxe profissional.</p>
+            <div class="hero-links">
+                <a href="#logica" class="btn-primary">🧠 Lógica de Programação</a>
+                <a href="#linguagens" class="btn-outline">💻 Linguagens na Prática</a>
+            </div>
+        </div>
+    </section>
+
+    <div class="content-container">
+
+        <!-- LÓGICA DE PROGRAMAÇÃO -->
+        <section class="section" id="logica">
+            <div class="section-header">
+                <div class="section-icon logic">🧠</div>
+                <h2>Lógica de Programação: Do zero às estruturas essenciais</h2>
+                <p>Conceitos fundamentais que formam a base de qualquer linguagem. Exemplos com sintaxe destacada e colorida.</p>
+            </div>
+
+            <div class="subsection">
+                <h3><span class="dot blue"></span> O que é um programa?</h3>
+                <p>Um programa é uma sequência de <strong>instruções</strong> que manipulam dados e tomam decisões. A lógica de programação organiza essas instruções de forma correta e compreensível.</p>
+            </div>
+
+            <div class="subsection" id="logica-variaveis">
+                <h3><span class="dot blue"></span> Variáveis e Tipos de Dados</h3>
+                <h4>Variáveis</h4>
+                <p>Espaço na memória que guarda um valor. Use nomes significativos.</p>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> exemplo</div>
+                    <pre><code class="language-python">idade = 25
+nome = "Maria"
+altura = 1.68</code></pre>
+                </div>
+
+                <h4>Tipos primitivos</h4>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Tipo</th><th>Exemplo</th><th>Descrição</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>int</code></td><td><code>42</code>, <code>-7</code></td><td>Números sem parte decimal</td></tr>
+                            <tr><td><code>float</code></td><td><code>3.14</code></td><td>Números com casas decimais</td></tr>
+                            <tr><td><code>string</code></td><td><code>"Olá"</code></td><td>Sequência de caracteres</td></tr>
+                            <tr><td><code>bool</code></td><td><code>True</code>, <code>False</code></td><td>Verdadeiro ou falso</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>Conversão de tipos</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> conversão</div>
+                    <pre><code class="language-python">ano = 2025
+texto_ano = str(ano)        # "2025"
+proximo = int("2026")       # 2026
+altura = float("1.75")      # 1.75</code></pre>
+                </div>
+                <div class="callout"><span class="callout-icon">💡</span><span><strong>Desafio:</strong> Crie variáveis para armazenar nome de produto, quantidade, preço e disponibilidade.</span></div>
+            </div>
+
+            <div class="subsection" id="logica-operadores">
+                <h3><span class="dot purple"></span> Operadores e Expressões</h3>
+                <h4>Aritméticos</h4>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Operador</th><th>Significado</th><th>Exemplo (a=10,b=3)</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>+</code></td><td>Adição</td><td><code>a + b</code> → <code>13</code></td></tr>
+                            <tr><td><code>-</code></td><td>Subtração</td><td><code>a - b</code> → <code>7</code></td></tr>
+                            <tr><td><code>*</code></td><td>Multiplicação</td><td><code>a * b</code> → <code>30</code></td></tr>
+                            <tr><td><code>/</code></td><td>Divisão</td><td><code>a / b</code> → <code>3.33</code></td></tr>
+                            <tr><td><code>//</code></td><td>Divisão inteira</td><td><code>a // b</code> → <code>3</code></td></tr>
+                            <tr><td><code>%</code></td><td>Módulo</td><td><code>a % b</code> → <code>1</code></td></tr>
+                            <tr><td><code>**</code></td><td>Exponenciação</td><td><code>a ** b</code> → <code>1000</code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4>Relacionais e lógicos</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> lógica</div>
+                    <pre><code class="language-python">idade = 20
+tem_carteira = True
+pode_dirigir = idade >= 18 and tem_carteira  # True</code></pre>
+                </div>
+                <div class="callout"><span class="callout-icon">💡</span><span><strong>Desafio:</strong> Expressão verdadeira se número entre 10 e 20 (inclusive).</span></div>
+            </div>
+
+            <div class="subsection" id="logica-controle">
+                <h3><span class="dot green"></span> Estruturas de Controle</h3>
+                <h4>Condicionais</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> if/elif/else</div>
+                    <pre><code class="language-python">nota = 8.0
+if nota >= 9.0:
+    print("Excelente")
+elif nota >= 7.0:
+    print("Bom")
+else:
+    print("Insuficiente")</code></pre>
+                </div>
+
+                <h4>Laço while</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> while</div>
+                    <pre><code class="language-python">contador = 0
+while contador < 5:
+    print(contador)
+    contador = contador + 1</code></pre>
+                </div>
+
+                <h4>Laço for e break/continue</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> for</div>
+                    <pre><code class="language-python">for i in range(10):
+    if i == 3:
+        continue
+    if i == 7:
+        break
+    print(i)
+# Saída: 0, 1, 2, 4, 5, 6</code></pre>
+                </div>
+                <div class="callout"><span class="callout-icon">💡</span><span><strong>Desafio:</strong> Some todos os números pares de 1 a 100 com for e condicional.</span></div>
+            </div>
+
+            <div class="subsection" id="logica-funcoes">
+                <h3><span class="dot orange"></span> Funções</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> definição</div>
+                    <pre><code class="language-python">def saudacao(nome):
+    return "Olá, " + nome + "!"
+
+print(saudacao("João"))</code></pre>
+                </div>
+                <h4>Parâmetros padrão e escopo</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> parâmetros</div>
+                    <pre><code class="language-python">def aumentar_preco(valor, percentual=10):
+    return valor * (1 + percentual/100)
+
+print(aumentar_preco(100))   # 110.0
+print(aumentar_preco(100,20)) # 120.0</code></pre>
+                </div>
+                <div class="callout"><span class="callout-icon">💡</span><span><strong>Desafio:</strong> Função <code>e_par(numero)</code> que retorna <code>True</code> se par.</span></div>
+            </div>
+
+            <div class="subsection" id="logica-recursao">
+                <h3><span class="dot purple"></span> Recursão</h3>
+                <h4>Fatorial</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> fatorial</div>
+                    <pre><code class="language-python">def fatorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * fatorial(n - 1)
+
+print(fatorial(5))  # 120</code></pre>
+                </div>
+                <h4>Fibonacci</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> fibonacci</div>
+                    <pre><code class="language-python">def fibonacci(n):
+    if n == 0: return 0
+    elif n == 1: return 1
+    else: return fibonacci(n-1) + fibonacci(n-2)
+
+# 0 1 1 2 3 5 8 13 21 34</code></pre>
+                </div>
+                <div class="callout warning"><span class="callout-icon">⚠️</span><span>Fibonacci recursivo ingênuo é <code>O(2ⁿ)</code> — ineficiente para n grande.</span></div>
+                <div class="callout"><span class="callout-icon">💡</span><span><strong>Desafio:</strong> Função recursiva <code>soma(n)</code> que retorne 1+2+...+n.</span></div>
+            </div>
+
+            <div class="subsection" id="logica-estruturas">
+                <h3><span class="dot green"></span> Estruturas de Dados</h3>
+                <h4>Lista</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> lista</div>
+                    <pre><code class="language-python">frutas = ["maçã", "banana"]
+frutas.append("uva")
+print(frutas[0])  # maçã</code></pre>
+                </div>
+                <h4>Pilha (LIFO)</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> pilha</div>
+                    <pre><code class="language-python">pilha = []
+pilha.append("A")
+pilha.append("B")
+print(pilha.pop())  # B</code></pre>
+                </div>
+                <h4>Fila (FIFO)</h4>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> fila</div>
+                    <pre><code class="language-python">from collections import deque
+fila = deque()
+fila.append("João")
+fila.append("Maria")
+print(fila.popleft())  # João</code></pre>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Estrutura</th><th>Ordem</th><th>Inserção</th><th>Remoção</th></tr></thead>
+                        <tbody>
+                            <tr><td>Lista</td><td>Índice</td><td>Fim/posição</td><td>Fim/posição</td></tr>
+                            <tr><td>Pilha</td><td>LIFO</td><td>Topo</td><td>Topo</td></tr>
+                            <tr><td>Fila</td><td>FIFO</td><td>Final</td><td>Início</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection" id="logica-complexidade">
+                <h3><span class="dot orange"></span> Complexidade (Big O)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Notação</th><th>Nome</th><th>Exemplo</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>O(1)</code></td><td>Constante</td><td>Acesso por índice</td></tr>
+                            <tr><td><code>O(log n)</code></td><td>Logarítmico</td><td>Busca binária</td></tr>
+                            <tr><td><code>O(n)</code></td><td>Linear</td><td>Percorrer lista</td></tr>
+                            <tr><td><code>O(n log n)</code></td><td>Log-linear</td><td>Merge sort</td></tr>
+                            <tr><td><code>O(n²)</code></td><td>Quadrático</td><td>Dois laços aninhados</td></tr>
+                            <tr><td><code>O(2ⁿ)</code></td><td>Exponencial</td><td>Fibonacci recursivo</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout success"><span class="callout-icon">📊</span><span>Para n=1.000.000, <code>O(n²)</code> faz ~1 trilhão de operações, <code>O(n log n)</code> faz ~20 milhões.</span></div>
+            </div>
+
+            <div class="subsection">
+                <h3><span class="dot blue"></span> Exemplo integrado: consultório</h3>
+                <div class="code-block">
+                    <div class="code-header"><span class="lang-tag">Python</span> sistema completo</div>
+                    <pre><code class="language-python">from collections import deque
+
+def adicionar_paciente(fila, nome, prioridade=False):
+    if prioridade:
+        fila.appendleft(nome)
+    else:
+        fila.append(nome)
+
+def chamar_proximo(fila):
+    if len(fila) == 0:
+        print("Nenhum paciente.")
+    else:
+        print(f"Chamando {fila.popleft()}")
+
+fila = deque()
+adicionar_paciente(fila, "Ana")
+adicionar_paciente(fila, "Bruno")
+adicionar_paciente(fila, "Carla", prioridade=True)
+chamar_proximo(fila)
+chamar_proximo(fila)
+chamar_proximo(fila)</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- LINGUAGENS DE PROGRAMAÇÃO -->
+        <section class="section" id="linguagens">
+            <div class="section-header">
+                <div class="section-icon langs">💻</div>
+                <h2>Linguagens de Programação na Prática</h2>
+                <p>Seis linguagens que representam paradigmas distintos e nichos importantes. Clique nos cards para explorar detalhes.</p>
+            </div>
+
+            <div class="lang-grid">
+                <!-- Java -->
+                <div class="lang-card" id="lang-java">
+                    <div class="lang-card-header">
+                        <div class="lang-icon java">☕</div>
+                        <div>
+                            <div class="lang-name">Java</div>
+                            <div class="lang-tagline">Orientação a Objetos</div>
+                        </div>
+                    </div>
+                    <p class="lang-brief">Compilada para bytecode, roda na JVM. Filosofia "write once, run anywhere".</p>
+                    <details>
+                        <summary>Ver detalhes</summary>
+                        <div class="lang-details">
+                            <h5>Casos de uso</h5>
+                            <ul>
+                                <li>Sistemas corporativos (Spring, Jakarta EE)</li>
+                                <li>Android (milhões de apps)</li>
+                                <li>Big Data (Hadoop, Spark, Kafka)</li>
+                                <li>Nuvem (Netflix, AWS)</li>
+                            </ul>
+                            <h5>Curiosidades</h5>
+                            <ul>
+                                <li>Projeto Oak para TV a cabo interativa.</li>
+                                <li>Mascote Duke é ícone cultural.</li>
+                                <li>JIT e GCs modernos (ZGC) trazem performance nativa.</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Haskell -->
+                <div class="lang-card" id="lang-haskell">
+                    <div class="lang-card-header">
+                        <div class="lang-icon haskell">λ</div>
+                        <div>
+                            <div class="lang-name">Haskell</div>
+                            <div class="lang-tagline">Funcional Pura</div>
+                        </div>
+                    </div>
+                    <p class="lang-brief">Puramente funcional, lazy evaluation, sistema de tipos forte.</p>
+                    <details>
+                        <summary>Ver detalhes</summary>
+                        <div class="lang-details">
+                            <h5>Casos de uso</h5>
+                            <ul>
+                                <li>Compiladores (GHC, Pandoc)</li>
+                                <li>Verificação formal (Cryptol)</li>
+                                <li>Finanças quantitativas</li>
+                                <li>Pipelines funcionais (Meta)</li>
+                            </ul>
+                            <h5>Curiosidades</h5>
+                            <ul>
+                                <li>Nome em homenagem a Haskell Curry.</li>
+                                <li>Mônadas tornaram I/O prático.</li>
+                                <li>Listas infinitas graças à lazy evaluation.</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Python -->
+                <div class="lang-card" id="lang-python">
+                    <div class="lang-card-header">
+                        <div class="lang-icon python">🐍</div>
+                        <div>
+                            <div class="lang-name">Python</div>
+                            <div class="lang-tagline">Scripting / Multiuso</div>
+                        </div>
+                    </div>
+                    <p class="lang-brief">Interpretada, dinâmica, sintaxe limpa. A "cola universal" da computação.</p>
+                    <details>
+                        <summary>Ver detalhes</summary>
+                        <div class="lang-details">
+                            <h5>Casos de uso</h5>
+                            <ul>
+                                <li>IA/ML (TensorFlow, PyTorch)</li>
+                                <li>Web (Django, Flask)</li>
+                                <li>DevOps (Ansible, scripts)</li>
+                                <li>Ciência de dados</li>
+                            </ul>
+                            <h5>Curiosidades</h5>
+                            <ul>
+                                <li>Criado por Guido van Rossum em 1989.</li>
+                                <li>Nome veio do Monty Python.</li>
+                                <li><code>import this</code> mostra o Zen do Python.</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- C -->
+                <div class="lang-card" id="lang-c">
+                    <div class="lang-card-header">
+                        <div class="lang-icon c">⚙️</div>
+                        <div>
+                            <div class="lang-name">C</div>
+                            <div class="lang-tagline">Linguagem de Sistema</div>
+                        </div>
+                    </div>
+                    <p class="lang-brief">Compilada, controle absoluto sobre memória. Base de kernels, drivers e engines.</p>
+                    <details>
+                        <summary>Ver detalhes</summary>
+                        <div class="lang-details">
+                            <h5>Casos de uso</h5>
+                            <ul>
+                                <li>Kernels (Linux, Windows, XNU)</li>
+                                <li>Drivers e firmware</li>
+                                <li>Engines de jogos</li>
+                                <li>OpenSSL, Redis, Nginx</li>
+                            </ul>
+                            <h5>Curiosidades</h5>
+                            <ul>
+                                <li>Criada por Dennis Ritchie em 1972.</li>
+                                <li>O "Hello, World!" veio do livro K&R.</li>
+                                <li>Comportamento indefinido permite otimizações extremas.</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- TypeScript -->
+                <div class="lang-card" id="lang-typescript">
+                    <div class="lang-card-header">
+                        <div class="lang-icon typescript">🔷</div>
+                        <div>
+                            <div class="lang-name">TypeScript</div>
+                            <div class="lang-tagline">Web / Mobile</div>
+                        </div>
+                    </div>
+                    <p class="lang-brief">Superset tipado do JavaScript. Tipagem estática opcional, transcompila para JS.</p>
+                    <details>
+                        <summary>Ver detalhes</summary>
+                        <div class="lang-details">
+                            <h5>Casos de uso</h5>
+                            <ul>
+                                <li>Front-end escalável (Angular, React)</li>
+                                <li>Back-end (NestJS, Deno)</li>
+                                <li>Mobile (React Native)</li>
+                                <li>CLIs e ferramentas</li>
+                            </ul>
+                            <h5>Curiosidades</h5>
+                            <ul>
+                                <li>Criado por Anders Hejlsberg (Turbo Pascal, C#).</li>
+                                <li>Compilador auto-hospedado em TS.</li>
+                                <li>Tipos apagados em runtime, sem overhead.</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Zig -->
+                <div class="lang-card" id="lang-zig">
+                    <div class="lang-card-header">
+                        <div class="lang-icon zig">⚡</div>
+                        <div>
+                            <div class="lang-name">Zig</div>
+                            <div class="lang-tagline">Emergente / Nicho</div>
+                        </div>
+                    </div>
+                    <p class="lang-brief">Alternativa moderna ao C, com comptime, cross-compilation e sem hidden control flow.</p>
+                    <details>
+                        <summary>Ver detalhes</summary>
+                        <div class="lang-details">
+                            <h5>Casos de uso</h5>
+                            <ul>
+                                <li>Sistemas de baixo nível</li>
+                                <li>Build systems (compila C/C++)</li>
+                                <li>Desenvolvimento de jogos</li>
+                                <li>Segurança cibernética</li>
+                            </ul>
+                            <h5>Curiosidades</h5>
+                            <ul>
+                                <li>Projeto solo de Andrew Kelley (2015).</li>
+                                <li>Comptime executa código em tempo de compilação.</li>
+                                <li>Cross-compilação nativa com <code>-target</code>.</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <div class="subsection" style="margin-top:28px;">
+                <h3><span class="dot blue"></span> Conclusão</h3>
+                <ul>
+                    <li><strong>Java</strong> — portabilidade e ecossistema corporativo.</li>
+                    <li><strong>Haskell</strong> — pureza funcional com elegância.</li>
+                    <li><strong>Python</strong> — a cola universal de dados e IA.</li>
+                    <li><strong>C</strong> — alicerce insubstituível de sistemas.</li>
+                    <li><strong>TypeScript</strong> — engenharia previsível para web.</li>
+                    <li><strong>Zig</strong> — sistemas modernos, seguros e explícitos.</li>
+                </ul>
+                <p style="margin-top:12px;">Conhecer essas linguagens é expandir seu repertório de pensamento computacional.</p>
+            </div>
+
+            <div class="subsection">
+                <h3><span class="dot green"></span> Desafios Finais</h3>
+                <ol>
+                    <li>Função que retorna o maior elemento de uma lista (sem funções prontas).</li>
+                    <li>Função recursiva para inverter uma string.</li>
+                    <li>Modele uma pilha de livros e simule operações.</li>
+                    <li>Algoritmo com laço até <code>n</code> e laço interno até <code>10</code> → qual complexidade?</li>
+                </ol>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<a href="#top" class="back-to-top" title="Voltar ao topo">↑</a>
+
+<script>
+    // highlight.js initialization
+    document.addEventListener('DOMContentLoaded', () => {
+        hljs.highlightAll();
+    });
+
+    function closeMobileNav() {
+        const details = document.getElementById('mobile-nav-details');
+        if (details) details.open = false;
+    }
+
+    // Scroll spy simples para sidebar
+    (function() {
+        const sidebarLinks = document.querySelectorAll('.sidebar-nav a[href^="#"]');
+        const sections = [];
+        sidebarLinks.forEach(link => {
+            const id = link.getAttribute('href').substring(1);
+            const el = document.getElementById(id);
+            if (el) sections.push({ id, el, link });
+        });
+
+        function updateActive() {
+            let current = null;
+            const scrollTop = window.scrollY + 120;
+            sections.forEach(s => {
+                if (s.el.offsetTop <= scrollTop) current = s.id;
+            });
+            sidebarLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+            });
+        }
+        window.addEventListener('scroll', updateActive, { passive: true });
+        updateActive();
+    })();
+</script>
+</body>
+</html>
