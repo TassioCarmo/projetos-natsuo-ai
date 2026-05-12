@@ -1,0 +1,2177 @@
+<!--
+============================================================
+ARQUITETURA DE DADOS MODERNA — Documentação Técnica Completa
+Versão 2.3 — Revisão Didática (Maio 2026)
+Novidades v2.3:
+- Glossário "Para o Trainee" (LSM, MVCC, WAL, Sharding, Cardinalidade, PACELC)
+- Correção: Redis 6.0+ tem I/O multi-threaded
+- Nuance: SQLite em modo WAL permite leitores concorrentes
+- Custo de subir consistência no MongoDB (eventual → majority)
+- "Quando NÃO usar" para Time-Series e Vetorial
+- Diagrama Row vs Column visual
+- Colunas de Custo Relativo ($-$$$$) e Carga Operacional
+- Teorema PACELC (extensão do CAP)
+- Explicações "por baixo dos panos" com analogias simples
+Versões anteriores: Vitess/Instagram, index-free adjacency, supernodes,
+query-first modeling, hybrid search, tunable consistency,
+distinção colunar vs wide-column.
+============================================================
+-->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitetura de Dados Moderna — Documentação Técnica v2.3</title>
+
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Prism.js Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+           CSS RESET & VARIABLES — Design System Dark Theme Premium
+           ============================================================ */
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #11161d;
+            --bg-tertiary: #161c24;
+            --bg-elevated: #1a2129;
+            --bg-sidebar: #0c1017;
+            --bg-card: #141a22;
+            --bg-code: #0d1117;
+            --bg-input: #0f1419;
+            --bg-hover: #1c2330;
+            --bg-active: #1e2735;
+            --bg-table-header: #111820;
+            --bg-table-stripe: #131a24;
+            --bg-callout-info: #0d1a2d;
+            --bg-callout-warn: #2d1f0d;
+            --bg-callout-tip: #0d2d1a;
+            --bg-callout-danger: #2d0d0d;
+            --bg-callout-compare: #1a1a2e;
+            --bg-badge: #1a2433;
+            --text-primary: #e4e8ee;
+            --text-secondary: #b0b8c4;
+            --text-tertiary: #7c8594;
+            --text-muted: #5a6474;
+            --text-link: #5da8f0;
+            --text-link-hover: #82c0ff;
+            --text-code: #c9d1d9;
+            --text-heading: #f0f3f8;
+            --border-primary: #1e2938;
+            --border-secondary: #243040;
+            --border-subtle: #1a2533;
+            --border-card: #1e2a38;
+            --border-input: #253040;
+            --border-active: #3b5998;
+            --accent-blue: #4a90d9;
+            --accent-blue-light: #6db3f2;
+            --accent-green: #3fb950;
+            --accent-green-light: #56d364;
+            --accent-orange: #d29922;
+            --accent-orange-light: #e3b341;
+            --accent-red: #f85149;
+            --accent-red-light: #ff6b63;
+            --accent-purple: #a371f7;
+            --accent-purple-light: #bc8cff;
+            --accent-cyan: #39c5cf;
+            --accent-pink: #e0558a;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --shadow-glow-blue: 0 0 20px rgba(74, 144, 217, 0.15);
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --sidebar-width: 290px;
+            --header-height: 56px;
+            --content-max: 880px;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            --transition-fast: 120ms ease;
+            --transition-normal: 200ms ease;
+            --transition-slow: 350ms ease;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-primary);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            overflow: hidden;
+            transition: transform var(--transition-normal);
+        }
+        .sidebar-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border-primary);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-header .logo-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .sidebar-header .logo-text {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--text-heading);
+            letter-spacing: -0.3px;
+            line-height: 1.2;
+        }
+        .sidebar-header .logo-sub {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .sidebar-search {
+            padding: 12px 16px;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .sidebar-search input {
+            width: 100%;
+            padding: 9px 12px 9px 34px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-input);
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: var(--font-sans);
+            transition: all var(--transition-fast);
+            outline: none;
+        }
+        .sidebar-search input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.1);
+        }
+        .sidebar-search .search-icon {
+            position: absolute;
+            left: 26px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-tertiary);
+            font-size: 13px;
+            pointer-events: none;
+        }
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 8px 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-secondary) transparent;
+        }
+        .sidebar-nav::-webkit-scrollbar {
+            width: 5px;
+        }
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: var(--border-secondary);
+            border-radius: 10px;
+        }
+        .sidebar-nav .nav-section {
+            margin-bottom: 4px;
+        }
+        .sidebar-nav .nav-section-title {
+            padding: 8px 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            transition: color var(--transition-fast);
+        }
+        .sidebar-nav .nav-section-title:hover {
+            color: var(--text-secondary);
+        }
+        .sidebar-nav .nav-section-title i {
+            font-size: 9px;
+            transition: transform var(--transition-fast);
+        }
+        .sidebar-nav .nav-section.collapsed .nav-section-title i {
+            transform: rotate(-90deg);
+        }
+        .sidebar-nav .nav-section.collapsed .nav-items {
+            display: none;
+        }
+        .sidebar-nav .nav-items {
+            list-style: none;
+        }
+        .sidebar-nav .nav-items li a {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 7px 20px 7px 28px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 400;
+            transition: all var(--transition-fast);
+            border-left: 2px solid transparent;
+            letter-spacing: -0.1px;
+        }
+        .sidebar-nav .nav-items li a:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+            border-left-color: var(--border-active);
+        }
+        .sidebar-nav .nav-items li a.active {
+            color: var(--text-link);
+            background: var(--bg-active);
+            border-left-color: var(--accent-blue);
+            font-weight: 500;
+        }
+        .sidebar-nav .nav-items li a .nav-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: var(--text-muted);
+            transition: background var(--transition-fast);
+        }
+        .sidebar-nav .nav-items li a.active .nav-dot {
+            background: var(--accent-blue);
+            box-shadow: 0 0 8px rgba(74, 144, 217, 0.5);
+        }
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-primary);
+            padding: 0 28px;
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .topbar .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-tertiary);
+            flex-wrap: wrap;
+        }
+        .topbar .breadcrumb a {
+            color: var(--text-tertiary);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+        .topbar .breadcrumb a:hover {
+            color: var(--text-link);
+        }
+        .topbar .breadcrumb .sep {
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+        .topbar .breadcrumb .current {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: var(--radius-sm);
+            transition: background var(--transition-fast);
+        }
+        .mobile-menu-btn:hover {
+            background: var(--bg-hover);
+        }
+        .content-area {
+            flex: 1;
+            padding: 32px 40px 80px;
+            max-width: calc(var(--content-max) + 80px);
+            width: 100%;
+        }
+        .content-area section {
+            margin-bottom: 60px;
+            scroll-margin-top: 80px;
+        }
+        .content-area h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            color: var(--text-heading);
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+        .content-area h2 {
+            font-size: 1.65rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--text-heading);
+            margin-top: 40px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .content-area h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            margin-top: 28px;
+            margin-bottom: 10px;
+        }
+        .content-area h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 20px;
+            margin-bottom: 8px;
+        }
+        .content-area p {
+            margin-bottom: 14px;
+            color: var(--text-secondary);
+            max-width: 72ch;
+        }
+        .content-area strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .content-area a {
+            color: var(--text-link);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition-fast);
+        }
+        .content-area a:hover {
+            color: var(--text-link-hover);
+            text-decoration: underline;
+        }
+        .content-area ul,
+        .content-area ol {
+            margin-bottom: 14px;
+            padding-left: 22px;
+            color: var(--text-secondary);
+        }
+        .content-area li {
+            margin-bottom: 6px;
+        }
+        .content-area code {
+            font-family: var(--font-mono);
+            font-size: 0.88em;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: var(--radius-sm);
+            color: var(--accent-orange-light);
+            border: 1px solid var(--border-subtle);
+            white-space: nowrap;
+        }
+        .content-area pre {
+            margin-bottom: 20px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-card);
+            overflow-x: auto;
+            position: relative;
+            box-shadow: var(--shadow-md);
+        }
+        .content-area pre code {
+            background: transparent;
+            border: none;
+            padding: 18px 20px;
+            color: var(--text-code);
+            white-space: pre;
+            display: block;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .content-area pre .lang-badge {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            font-family: var(--font-sans);
+            font-weight: 600;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border-card);
+            font-size: 0.9rem;
+        }
+        table thead {
+            background: var(--bg-table-header);
+        }
+        table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-heading);
+            font-size: 0.85rem;
+            letter-spacing: 0.2px;
+            border-bottom: 2px solid var(--border-primary);
+        }
+        table td {
+            padding: 10px 16px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        table tbody tr:nth-child(even) {
+            background: var(--bg-table-stripe);
+        }
+        table tbody tr:hover {
+            background: var(--bg-hover);
+        }
+        .callout {
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            border-left: 4px solid;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .callout-info {
+            background: var(--bg-callout-info);
+            border-left-color: var(--accent-blue);
+        }
+        .callout-warning {
+            background: var(--bg-callout-warn);
+            border-left-color: var(--accent-orange);
+        }
+        .callout-tip {
+            background: var(--bg-callout-tip);
+            border-left-color: var(--accent-green);
+        }
+        .callout-danger {
+            background: var(--bg-callout-danger);
+            border-left-color: var(--accent-red);
+        }
+        .callout-compare {
+            background: var(--bg-callout-compare);
+            border-left-color: var(--accent-purple);
+        }
+        .callout .callout-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .callout-info .callout-title {
+            color: var(--accent-blue-light);
+        }
+        .callout-warning .callout-title {
+            color: var(--accent-orange-light);
+        }
+        .callout-tip .callout-title {
+            color: var(--accent-green-light);
+        }
+        .callout-danger .callout-title {
+            color: var(--accent-red-light);
+        }
+        .callout-compare .callout-title {
+            color: var(--accent-purple-light);
+        }
+        .callout p {
+            margin-bottom: 0;
+            color: var(--text-secondary);
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-lg);
+            padding: 20px 22px;
+            transition: all var(--transition-normal);
+            cursor: default;
+        }
+        .card:hover {
+            border-color: var(--border-active);
+            box-shadow: var(--shadow-glow-blue);
+            transform: translateY(-1px);
+        }
+        .card .card-icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .card h4 {
+            margin-top: 0;
+            font-size: 1rem;
+            font-weight: 650;
+            color: var(--text-heading);
+        }
+        .card p {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin-bottom: 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            background: var(--bg-badge);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-secondary);
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+        .badge-blue {
+            background: rgba(74, 144, 217, 0.15);
+            color: var(--accent-blue-light);
+            border-color: rgba(74, 144, 217, 0.3);
+        }
+        .badge-green {
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--accent-green-light);
+            border-color: rgba(63, 185, 80, 0.3);
+        }
+        .badge-orange {
+            background: rgba(210, 153, 34, 0.15);
+            color: var(--accent-orange-light);
+            border-color: rgba(210, 153, 34, 0.3);
+        }
+        .badge-purple {
+            background: rgba(163, 113, 247, 0.15);
+            color: var(--accent-purple-light);
+            border-color: rgba(163, 113, 247, 0.3);
+        }
+        .mermaid-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+        .mermaid-container .mermaid {
+            display: inline-block;
+            min-width: 300px;
+        }
+        .back-to-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-primary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 90;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all var(--transition-normal);
+            pointer-events: none;
+            box-shadow: var(--shadow-md);
+        }
+        .back-to-top.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .back-to-top:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-active);
+        }
+        .search-highlight {
+            background: rgba(210, 153, 34, 0.35);
+            border-radius: 2px;
+            padding: 0 2px;
+        }
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: var(--shadow-lg);
+            }
+            .main-wrapper {
+                margin-left: 0;
+            }
+            .mobile-menu-btn {
+                display: flex;
+            }
+            .content-area {
+                padding: 20px 20px 60px;
+            }
+            .content-area h1 {
+                font-size: 1.8rem;
+            }
+            .content-area h2 {
+                font-size: 1.35rem;
+            }
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            table {
+                font-size: 0.78rem;
+            }
+            table th,
+            table td {
+                padding: 8px 10px;
+            }
+        }
+        @media (max-width: 640px) {
+            .content-area {
+                padding: 16px 14px 50px;
+            }
+            .content-area h1 {
+                font-size: 1.5rem;
+            }
+            .content-area pre code {
+                font-size: 0.75rem;
+                padding: 14px;
+            }
+            .topbar {
+                padding: 0 14px;
+            }
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 99;
+            cursor: pointer;
+        }
+        .sidebar-overlay.active {
+            display: block;
+        }
+        section.search-hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- ============================================================
+    SIDEBAR
+    ============================================================ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"><i class="fa-solid fa-database"></i></div>
+            <div>
+                <div class="logo-text">DataArch</div>
+                <div class="logo-sub">Documentação Técnica</div>
+            </div>
+        </div>
+        <div class="sidebar-search">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Buscar na documentação..." autocomplete="off">
+        </div>
+        <nav class="sidebar-nav" id="sidebarNav">
+            <div class="nav-section" id="navSec-intro">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> Introdução
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#intro-visao-geral" data-nav><span class="nav-dot"></span>Visão Geral</a></li>
+                    <li><a href="#intro-como-escolher" data-nav><span class="nav-dot"></span>Como Escolher</a></li>
+                    <li><a href="#intro-matriz-decisao" data-nav><span class="nav-dot"></span>Matriz de Decisão</a></li>
+                    <li><a href="#intro-poliglot" data-nav><span class="nav-dot"></span>Poliglot Persistence</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-relacional">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> 1. Relacional (SQL)
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#rel-conceito" data-nav><span class="nav-dot"></span>Conceito & Modelo</a></li>
+                    <li><a href="#rel-caracteristicas" data-nav><span class="nav-dot"></span>Características</a></li>
+                    <li><a href="#rel-arquitetura" data-nav><span class="nav-dot"></span>Arquitetura Interna</a></li>
+                    <li><a href="#rel-linguagens" data-nav><span class="nav-dot"></span>SQL & Interfaces</a></li>
+                    <li><a href="#rel-casos" data-nav><span class="nav-dot"></span>Casos de Uso</a></li>
+                    <li><a href="#rel-nao-usar" data-nav><span class="nav-dot"></span>Quando NÃO Usar</a></li>
+                    <li><a href="#rel-produtos" data-nav><span class="nav-dot"></span>Produtos</a></li>
+                    <li><a href="#rel-ia" data-nav><span class="nav-dot"></span>IA & SQL</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-colunar">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> 2. Colunar / OLAP
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#col-conceito" data-nav><span class="nav-dot"></span>Conceito & Row vs Col</a></li>
+                    <li><a href="#col-vs-wc" data-nav><span class="nav-dot"></span>⚠️ Colunar ≠ Wide-Column</a></li>
+                    <li><a href="#col-casos" data-nav><span class="nav-dot"></span>Casos de Uso</a></li>
+                    <li><a href="#col-produtos" data-nav><span class="nav-dot"></span>Produtos</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-doc">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> 3. Documento
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#doc-conceito" data-nav><span class="nav-dot"></span>Conceito & Modelo</a></li>
+                    <li><a href="#doc-caracteristicas" data-nav><span class="nav-dot"></span>Características</a></li>
+                    <li><a href="#doc-arquitetura" data-nav><span class="nav-dot"></span>Arquitetura Interna</a></li>
+                    <li><a href="#doc-linguagens" data-nav><span class="nav-dot"></span>Queries & APIs</a></li>
+                    <li><a href="#doc-casos" data-nav><span class="nav-dot"></span>Casos de Uso</a></li>
+                    <li><a href="#doc-nao-usar" data-nav><span class="nav-dot"></span>Quando NÃO Usar</a></li>
+                    <li><a href="#doc-produtos" data-nav><span class="nav-dot"></span>Produtos</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-kv">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> 4. Key-Value
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#kv-conceito" data-nav><span class="nav-dot"></span>Conceito & Modelo</a></li>
+                    <li><a href="#kv-caracteristicas" data-nav><span class="nav-dot"></span>Características</a></li>
+                    <li><a href="#kv-arquitetura" data-nav><span class="nav-dot"></span>Arquitetura Interna</a></li>
+                    <li><a href="#kv-casos" data-nav><span class="nav-dot"></span>Casos de Uso</a></li>
+                    <li><a href="#kv-produtos" data-nav><span class="nav-dot"></span>Produtos</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-wc">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> 5. Wide-Column
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#wc-conceito" data-nav><span class="nav-dot"></span>Conceito & Modelo</a></li>
+                    <li><a href="#wc-modelagem" data-nav><span class="nav-dot"></span>Query-First Modeling</a></li>
+                    <li><a href="#wc-arquitetura" data-nav><span class="nav-dot"></span>Arquitetura Interna</a></li>
+                    <li><a href="#wc-casos" data-nav><span class="nav-dot"></span>Casos de Uso</a></li>
+                    <li><a href="#wc-produtos" data-nav><span class="nav-dot"></span>Produtos</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-grafo">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> 6. Grafo
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#grafo-conceito" data-nav><span class="nav-dot"></span>Conceito & Modelo</a></li>
+                    <li><a href="#grafo-adjacency" data-nav><span class="nav-dot"></span>Index-Free Adjacency</a></li>
+                    <li><a href="#grafo-casos" data-nav><span class="nav-dot"></span>Casos de Uso</a></li>
+                    <li><a href="#grafo-produtos" data-nav><span class="nav-dot"></span>Produtos</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-ts">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> 7. Time-Series
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#ts-conceito" data-nav><span class="nav-dot"></span>Conceito & Modelo</a></li>
+                    <li><a href="#ts-casos" data-nav><span class="nav-dot"></span>Casos de Uso & Quando NÃO Usar</a></li>
+                    <li><a href="#ts-produtos" data-nav><span class="nav-dot"></span>Produtos</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-search">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> 8. Search
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#search-conceito" data-nav><span class="nav-dot"></span>Conceito & Modelo</a></li>
+                    <li><a href="#search-casos" data-nav><span class="nav-dot"></span>Casos de Uso</a></li>
+                    <li><a href="#search-produtos" data-nav><span class="nav-dot"></span>Produtos</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-vec">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> 9. Vetorial
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#vec-conceito" data-nav><span class="nav-dot"></span>Conceito & Embeddings</a></li>
+                    <li><a href="#vec-rag" data-nav><span class="nav-dot"></span>RAG & IA Generativa</a></li>
+                    <li><a href="#vec-hybrid" data-nav><span class="nav-dot"></span>Hybrid Search</a></li>
+                    <li><a href="#vec-nao-usar" data-nav><span class="nav-dot"></span>Quando NÃO Usar</a></li>
+                    <li><a href="#vec-produtos" data-nav><span class="nav-dot"></span>Produtos</a></li>
+                </ul>
+            </div>
+            <div class="nav-section" id="navSec-extras">
+                <div class="nav-section-title" onclick="toggleNavSection(this)">
+                    <i class="fa-solid fa-chevron-down"></i> Apêndices
+                </div>
+                <ul class="nav-items">
+                    <li><a href="#extras-comparativo" data-nav><span class="nav-dot"></span>Tabela Comparativa</a></li>
+                    <li><a href="#extras-glossario" data-nav><span class="nav-dot"></span>Glossário para Trainee</a></li>
+                    <li><a href="#extras-pacelc" data-nav><span class="nav-dot"></span>Teorema PACELC</a></li>
+                    <li><a href="#extras-erros" data-nav><span class="nav-dot"></span>Erros Comuns</a></li>
+                    <li><a href="#extras-tendencias" data-nav><span class="nav-dot"></span>Tendências 2026</a></li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ============================================================
+    MAIN CONTENT
+    ============================================================ -->
+    <div class="main-wrapper">
+        <header class="topbar">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <nav class="breadcrumb" id="breadcrumb">
+                <a href="#intro-visao-geral">Home</a>
+                <span class="sep">/</span>
+                <span class="current">Visão Geral</span>
+            </nav>
+        </header>
+
+        <main class="content-area" id="mainContent">
+
+            <!-- ========================================================
+            INTRODUÇÃO
+            ========================================================= -->
+            <section id="intro-visao-geral">
+                <h1>🏗️ Arquitetura de Dados Moderna</h1>
+                <p>
+                    Este documento é um <strong>manual técnico de referência</strong> para engenheiros de software,
+                    arquitetos e cientistas de dados — mas com <strong>uma escada didática</strong> para que um
+                    trainee consiga acompanhar. Cada família é analisada sob a ótica da <strong>engenharia
+                        real</strong>: arquitetura interna, trade-offs, anti-padrões documentados e integração com
+                    IA moderna. A versão 2.3 incorpora explicações conceituais com analogias simples, um glossário
+                    para iniciantes e contextualização de custo e carga operacional (FinOps).
+                </p>
+                <div class="callout callout-info">
+                    <div class="callout-title"><i class="fa-solid fa-circle-info"></i> Como usar</div>
+                    <p>Navegue pela sidebar. As seções seguem o fluxo: tabular (Relacional → Colunar) → agregados
+                        (Documento, KV) → distribuídos (Wide-Column) → relacionamentos (Grafo) → especializados
+                        (TS, Search, Vetorial). Use <strong>Ctrl+K</strong> para busca. Termos densos como
+                        <em>LSM Tree</em>, <em>MVCC</em>, <em>WAL</em>, <em>Sharding</em> e <em>Cardinalidade</em>
+                        estão definidos no <a href="#extras-glossario">Glossário para Trainee</a>.</p>
+                </div>
+                <div class="callout callout-tip">
+                    <div class="callout-title"><i class="fa-solid fa-graduation-cap"></i> Para o trainee</div>
+                    <p>Se você está começando, leia primeiro o <a href="#extras-glossario">glossário</a> e depois
+                        volte. Cada seção tem um bloco "<strong>Por baixo dos panos</strong>" com analogias do
+                        mundo real para os conceitos mais densos.</p>
+                </div>
+                <div class="card-grid">
+                    <div class="card"><div class="card-icon">🗄️</div><h4>9 Famílias</h4><p>Relacional, Colunar, Documento, Key-Value, Wide-Column, Grafo, Time-Series, Search e Vetorial.</p></div>
+                    <div class="card"><div class="card-icon">🔬</div><h4>Profundidade Técnica</h4><p>Storage engines, WAL, LSM Trees, MVCC, index-free adjacency, supernodes.</p></div>
+                    <div class="card"><div class="card-icon">🤖</div><h4>IA Moderna</h4><p>RAG, embeddings, hybrid search (BM25 + vetor), memória de agentes.</p></div>
+                    <div class="card"><div class="card-icon">⚠️</div><h4>Anti-Padrões</h4><p>Shard keys monotônicas, ES como fonte de verdade, modelagem relacional no Cassandra.</p></div>
+                </div>
+            </section>
+
+            <section id="intro-como-escolher">
+                <h2>Como Escolher o Banco de Dados Correto</h2>
+                <p>
+                    A escolha não deve ser guiada por <em>hype</em>. É uma decisão arquitetural que impacta
+                    latência, throughput, custo operacional, complexidade de código e resiliência a falhas.
+                </p>
+                <h3>Perguntas Fundamentais</h3>
+                <ol>
+                    <li><strong>Qual o formato dos dados?</strong> Estruturado (tabelas), semiestruturado (JSON),
+                        grafos, séries temporais, vetores densos?</li>
+                    <li><strong>Qual o padrão de acesso?</strong> Leitura pesada, escrita pesada, balanceado?
+                        Consultas pontuais ou analíticas?</li>
+                    <li><strong>Qual a latência aceitável?</strong> Sub-ms (Redis), ms (PostgreSQL), segundos (BigQuery)?</li>
+                    <li><strong>Qual o volume de dados?</strong> GB, TB, PB?</li>
+                    <li><strong>Qual o modelo de consistência necessário?</strong> ACID estrito ou eventual aceitável?</li>
+                    <li><strong>Qual a tolerância a falhas?</strong> Zero downtime? Recuperação em minutos?</li>
+                    <li><strong>Qual o orçamento operacional?</strong> Self-hosted, managed cloud, serverless?</li>
+                </ol>
+            </section>
+
+            <section id="intro-matriz-decisao">
+                <h2>Matriz de Decisão</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Cenário</th><th>Banco Recomendado</th><th>Alternativa</th><th>Notas</th></tr></thead>
+                        <tbody>
+                            <tr><td>CRUD transacional + integridade</td><td><strong>PostgreSQL</strong></td><td>MySQL, CockroachDB</td><td>ACID mandatório</td></tr>
+                            <tr><td>Catálogo / CMS</td><td><strong>MongoDB</strong></td><td>Couchbase, Firestore</td><td>Schema flexível</td></tr>
+                            <tr><td>Cache de baixa latência</td><td><strong>Redis</strong></td><td>Memcached</td><td>Sub-ms</td></tr>
+                            <tr><td>Event sourcing / IoT</td><td><strong>Cassandra</strong></td><td>ScyllaDB</td><td>Write-heavy</td></tr>
+                            <tr><td>Grafos sociais / Recomendação</td><td><strong>Neo4j</strong></td><td>ArangoDB</td><td>Travessia profunda</td></tr>
+                            <tr><td>Métricas / monitoring</td><td><strong>Prometheus + InfluxDB</strong></td><td>TimescaleDB</td><td>Time-series nativo</td></tr>
+                            <tr><td>Full-text search</td><td><strong>Elasticsearch</strong></td><td>OpenSearch, Meilisearch</td><td>Índice invertido</td></tr>
+                            <tr><td><strong>RAG / busca semântica</strong></td><td><strong>Pinecone ou Weaviate</strong></td><td>PostgreSQL (pgvector)</td><td>pgvector se já usa Postgres</td></tr>
+                            <tr><td>Analytics / data warehouse</td><td><strong>ClickHouse</strong></td><td>BigQuery, Snowflake</td><td>Colunar, OLAP</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="intro-poliglot">
+                <h2>Poliglot Persistence</h2>
+                <p>
+                    Prática de usar <strong>diferentes tecnologias de armazenamento para diferentes
+                        necessidades</strong> dentro da mesma aplicação. Um e-commerce moderno pode usar:
+                </p>
+                <ul>
+                    <li><strong>PostgreSQL</strong> — pedidos, transações financeiras (ACID)</li>
+                    <li><strong>Redis</strong> — carrinho, sessões, rate limiting</li>
+                    <li><strong>Elasticsearch</strong> — busca de produtos (stemming, relevância)</li>
+                    <li><strong>Cassandra</strong> — eventos de navegação (write-heavy)</li>
+                    <li><strong>Pinecone</strong> — recomendações por similaridade semântica</li>
+                </ul>
+                <div class="mermaid-container"><pre class="mermaid">
+graph LR
+    A[API Gateway] --> B[Pedidos]
+    A --> C[Busca]
+    A --> D[Recomendação]
+    B --> E[(PostgreSQL)]
+    B --> F[(Redis)]
+    C --> G[(Elasticsearch)]
+    D --> H[(Pinecone)]
+    B --> I[(Cassandra)]
+                </pre></div>
+            </section>
+
+            <!-- ========================================================
+            1. RELACIONAL (SQL)
+            ========================================================= -->
+            <section id="rel-conceito">
+                <h2>1. Bancos Relacionais — Conceito & Modelo</h2>
+                <p>
+                    Organizam dados em <strong>tabelas</strong> com <strong>schema rígido</strong>. Baseado na
+                    álgebra relacional de Codd (1970). Relações por <strong>chaves primárias</strong> e
+                    <strong>estrangeiras</strong>, garantindo integridade referencial.
+                </p>
+                <h3>Modelo Mental</h3>
+                <p>
+                    Pense em um banco relacional como um <strong>conjunto matemático de fatos</strong>. Cada linha
+                    é uma proposição verdadeira. O SQL é declarativo: você descreve <em>o que</em> quer, o
+                    <strong>query planner</strong> decide <em>como</em> obter.
+                </p>
+                <pre><code class="language-sql">-- DDL + INSERT: como o dado é armazenado
+        CREATE TABLE pedidos (
+        id SERIAL PRIMARY KEY,
+        cliente_id INTEGER NOT NULL REFERENCES clientes(id),
+        valor_total NUMERIC(12,2) NOT NULL,
+        status VARCHAR(20) DEFAULT 'pendente',
+        criado_em TIMESTAMPTZ DEFAULT now()
+        );
+        INSERT INTO pedidos (cliente_id, valor_total, status)
+        VALUES (42, 299.90, 'confirmado');</code></pre>
+            </section>
+
+            <section id="rel-caracteristicas">
+                <h2>Características — ACID, CAP & Escalabilidade</h2>
+                <h3>ACID</h3>
+                <ul>
+                    <li><strong>Atomicidade:</strong> WAL garante tudo ou nada.</li>
+                    <li><strong>Consistência:</strong> Constraints e integridade referencial.</li>
+                    <li><strong>Isolamento:</strong> MVCC (PostgreSQL) ou locks (MySQL).</li>
+                    <li><strong>Durabilidade:</strong> WAL + fsync.</li>
+                </ul>
+                <h3>CAP Theorem — Contexto Correto</h3>
+                <p>
+                    O teorema CAP aplica-se a <strong>sistemas distribuídos com replicação</strong>. Um PostgreSQL
+                    standalone não está sujeito a partições de rede — não há "P" para tolerar. Já bancos
+                    <strong>NewSQL</strong> como <strong>CockroachDB</strong> são nativamente <strong>CP</strong>
+                    (consistência + tolerância a partições).
+                </p>
+            </section>
+
+            <section id="rel-arquitetura">
+                <h2>Arquitetura Interna — B-Tree, MVCC & VACUUM</h2>
+                <p>
+                    A maioria usa <strong>B-Trees</strong> como estrutura primária de índice. Cada nó ocupa uma
+                    <strong>página de disco</strong> (8KB no PostgreSQL). MVCC permite leituras não bloqueantes
+                    via snapshots. O <strong>VACUUM</strong> limpa versões obsoletas — falha em executá-lo causa
+                    <em>bloat</em> e degradação de performance.
+                </p>
+                <div class="callout callout-tip">
+                    <div class="callout-title"><i class="fa-solid fa-book-open"></i> Por baixo dos panos (analogias)</div>
+                    <p><strong>B-Tree</strong> é como o <em>índice remissivo de uma enciclopédia</em>: as páginas
+                        ficam ordenadas e o índice te leva rapidamente até a entrada certa em poucos saltos
+                        (O log N). Excelente para leitura por chave e busca por intervalo.<br><br>
+                        <strong>WAL (Write-Ahead Log)</strong> é como um <em>caderno de rascunho de garçom</em>:
+                        antes de mexer no caixa (disco principal), ele anota tudo na comanda. Se cair a luz,
+                        ao reabrir basta reler a comanda para reconstruir o estado. Garante durabilidade
+                        (D do ACID) sem precisar escrever no disco principal a cada operação.<br><br>
+                        <strong>MVCC (Multi-Version Concurrency Control)</strong> é como o <em>Google Docs com
+                        histórico de versões</em>: cada transação enxerga um snapshot consistente do banco e
+                        leituras nunca bloqueiam escritas. O preço é o "lixo" deixado por versões antigas, que
+                        o VACUUM precisa coletar periodicamente.</p>
+                </div>
+                <div class="mermaid-container"><pre class="mermaid">
+graph TD
+    A[Cliente SQL] --> B[Parser]
+    B --> C[Query Planner]
+    C --> D[Executor]
+    D --> E[Storage Engine]
+    E --> F[B-Tree Index]
+    E --> G[Heap / Table]
+    E --> H[WAL Writer]
+    H --> I[(Write-Ahead Log)]
+                </pre></div>
+            </section>
+
+            <section id="rel-linguagens">
+                <h2>SQL & Interfaces</h2>
+                <pre><code class="language-sql">-- Window function com cast explícito (evita divisão inteira)
+        SELECT categoria, produto, receita,
+        RANK() OVER (PARTITION BY categoria ORDER BY receita DESC) AS rank_cat,
+        ROUND(receita::numeric / SUM(receita::numeric) OVER (PARTITION BY categoria) * 100, 2) AS pct
+        FROM vendas_mensais WHERE data >= '2026-01-01'
+        ORDER BY categoria, rank_cat;</code></pre>
+            </section>
+
+            <section id="rel-casos">
+                <h2>Casos de Uso Reais (Validados)</h2>
+                <ul>
+                    <li><strong>Stripe:</strong> PostgreSQL para transações financeiras. ACID inegociável. Sharding com Citus.</li>
+                    <li><strong>Instagram:</strong> PostgreSQL com <strong>sharding lógico customizado</strong> (geração de IDs via PL/pgSQL, roteamento na aplicação). Não usam Vitess — Vitess é uma solução para MySQL criada pelo YouTube.</li>
+                    <li><strong>Uber:</strong> MySQL com <strong>Schemaless</strong> (camada interna de flexibilidade).</li>
+                </ul>
+                <div class="callout callout-warning">
+                    <div class="callout-title"><i class="fa-solid fa-triangle-exclamation"></i> Nota de correção</div>
+                    <p>Versões anteriores atribuíam Vitess ao Instagram/PostgreSQL. Isso estava incorreto. O Vitess foi
+                        criado pelo YouTube para escalar <strong>MySQL</strong>. O Instagram desenvolveu seu próprio
+                        sistema de sharding para PostgreSQL.</p>
+                </div>
+            </section>
+
+            <section id="rel-nao-usar">
+                <h2>Quando NÃO Usar SQL</h2>
+                <ul>
+                    <li><strong>Full-text search:</strong> Elasticsearch oferece stemming e BM25 nativos.</li>
+                    <li><strong>Análise de petabytes:</strong> ClickHouse/BigQuery superam row-store.</li>
+                    <li><strong>Schema altamente variável:</strong> MongoDB ou Couchbase mais naturais.</li>
+                </ul>
+            </section>
+
+            <section id="rel-produtos">
+                <h2>Produtos Relevantes</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Banco</th><th>Licença</th><th>Destaque</th><th>Limitação</th><th>Empresas</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>PostgreSQL</strong></td><td>MIT-like</td><td>Extensível, MVCC, JSONB, pgvector</td><td>Replicação multi-master complexa</td><td>Stripe, Instagram, Reddit</td></tr>
+                            <tr><td><strong>MySQL</strong></td><td>GPL/Oracle</td><td>Alta adoção, InnoDB robusto</td><td>Menos extensível que PG</td><td>Uber, GitHub, YouTube</td></tr>
+                            <tr><td><strong>SQLite</strong></td><td>Public Domain</td><td>Embedded, zero-config, <strong>single-writer</strong> (modo <strong>WAL</strong> permite leitores concorrentes ao escritor)</td><td>Apenas um escritor por vez — contenção em apps com alta concorrência de escrita</td><td>iOS, Android, Chrome</td></tr>
+                            <tr><td><strong>CockroachDB</strong></td><td>BSL</td><td>NewSQL, CP nativo, PG wire-compatible</td><td>Latência > PG standalone</td><td>Bose, Comcast</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout callout-info">
+                    <div class="callout-title"><i class="fa-solid fa-circle-info"></i> SQLite e o modo WAL</div>
+                    <p>Por padrão, o SQLite usa o modo <strong>rollback journal</strong>, onde leitores
+                        bloqueiam escritores e vice-versa. Ativando o modo <strong>WAL (Write-Ahead
+                            Logging)</strong> com <code>PRAGMA journal_mode=WAL</code>, leituras passam a
+                        ocorrer <strong>em paralelo</strong> à escrita em andamento — só não pode haver
+                        dois escritores simultâneos. Essa nuance é vital para performance em apps móveis
+                        e desktop modernos, onde leitura concorrente é a regra.</p>
+                </div>
+            </section>
+
+            <section id="rel-ia">
+                <h2>IA & SQL</h2>
+                <p>PostgreSQL + <strong>pgvector</strong> permite busca por similaridade de cosseno no SQL,
+                    mantendo metadados na mesma base — ideal para RAG sem dupla sincronização.</p>
+                <pre><code class="language-sql">-- Busca semântica com pgvector
+        SELECT documento_id, conteudo,
+        1 - (embedding <=> query_embedding) AS similaridade
+        FROM documentos ORDER BY embedding <=> query_embedding LIMIT 10;</code></pre>
+            </section>
+
+            <!-- ========================================================
+            2. COLUNAR / OLAP
+            ========================================================= -->
+            <section id="col-conceito">
+                <h2>2. Bancos Colunares / OLAP — Conceito & Row vs Column</h2>
+                <p>
+                    Armazenam dados <strong>por coluna</strong>. Em um row-store (OLTP), todos os campos de uma
+                    linha ficam juntos na mesma página. Em um column-store (OLAP), cada coluna é armazenada
+                    separadamente, permitindo compressão extrema (10-20x) e scans eficientes para agregações.
+                </p>
+                <h3>Visualização: Como o disco enxerga seus dados</h3>
+                <p>
+                    Considere uma tabela de vendas com 4 colunas (<code>id</code>, <code>data</code>,
+                    <code>categoria</code>, <code>valor</code>) e 3 linhas. Veja como cada arquitetura
+                    agrupa os bytes no disco:
+                </p>
+                <div class="mermaid-container"><pre class="mermaid">
+graph TB
+    subgraph ROW["🗄️ Row-Store (PostgreSQL, MySQL) — agrupado por LINHA"]
+        R1["Bloco 1: [1 | 2026-05-12 | audio  | 299.90]"]
+        R2["Bloco 2: [2 | 2026-05-12 | video  | 1499.00]"]
+        R3["Bloco 3: [3 | 2026-05-13 | audio  | 89.50]"]
+        R1 --> R2 --> R3
+    end
+    subgraph COL["📊 Column-Store (ClickHouse, BigQuery) — agrupado por COLUNA"]
+        C1["Bloco id:        [1, 2, 3]"]
+        C2["Bloco data:      [2026-05-12, 2026-05-12, 2026-05-13]"]
+        C3["Bloco categoria: [audio, video, audio]"]
+        C4["Bloco valor:     [299.90, 1499.00, 89.50]"]
+        C1 --> C2 --> C3 --> C4
+    end
+                </pre></div>
+                <div class="callout callout-tip">
+                    <div class="callout-title"><i class="fa-solid fa-lightbulb"></i> Intuição prática</div>
+                    <p>Para <code>SELECT SUM(valor) FROM vendas</code>:<br>
+                        • <strong>Row-Store:</strong> precisa ler TODOS os blocos (id, data, categoria, valor)
+                        para extrair apenas a coluna <code>valor</code>. Desperdício de I/O.<br>
+                        • <strong>Column-Store:</strong> lê apenas o bloco <code>valor</code>. Bônus: como
+                        valores semelhantes ficam juntos, a compressão chega a 10–20×.<br><br>
+                        Por isso row-stores ganham em OLTP (ler/atualizar uma linha inteira) e column-stores
+                        ganham em OLAP (agregar uma coluna sobre bilhões de linhas).</p>
+                </div>
+                <pre><code class="language-sql">-- Query analítica no ClickHouse
+        SELECT toStartOfDay(data) AS dia, categoria,
+        SUM(receita) AS total, COUNT(DISTINCT usuario_id) AS usuarios
+        FROM vendas WHERE data >= today() - 30
+        GROUP BY dia, categoria ORDER BY dia DESC, total DESC LIMIT 100;
+        -- Column-store lê apenas 4 colunas; row-store leria TODAS as colunas de cada linha.</code></pre>
+            </section>
+
+            <section id="col-vs-wc">
+                <h2>⚠️ Colunar (OLAP) ≠ Wide-Column (NoSQL)</h2>
+                <div class="callout callout-compare">
+                    <div class="callout-title"><i class="fa-solid fa-scale-balanced"></i> Distinção crítica</div>
+                    <p><strong>Colunar (ClickHouse, BigQuery):</strong> foco em <strong>compressão e agregações
+                            analíticas</strong>. Os dados são organizados por coluna para acelerar scans sequenciais
+                        e funções agregadas (SUM, AVG). Não foi feito para buscas pontuais por chave.<br><br>
+                        <strong>Wide-Column (Cassandra, ScyllaDB):</strong> foco em <strong>particionamento e
+                            escrita em massa</strong>. Os dados são organizados por row key + column families
+                        esparsas. Otimizado para gravações rápidas e disponibilidade, não para agregações
+                        analíticas.</p>
+                </div>
+            </section>
+
+            <section id="col-casos">
+                <h2>Casos de Uso</h2>
+                <ul>
+                    <li><strong>Cloudflare:</strong> ClickHouse para análise de trilhões de eventos/dia.</li>
+                    <li><strong>Spotify:</strong> BigQuery para análise de streaming.</li>
+                    <li><strong>Capital One:</strong> Snowflake como data warehouse corporativo.</li>
+                </ul>
+            </section>
+
+            <section id="col-produtos">
+                <h2>Produtos</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Banco</th><th>Licença</th><th>Destaque</th><th>Limitação</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>ClickHouse</strong></td><td>Apache 2.0</td><td>Rápido, compressão agressiva</td><td>Updates/Deletes custosos</td></tr>
+                            <tr><td><strong>BigQuery</strong></td><td>GCP Proprietário</td><td>Serverless, escala a PB</td><td>Custo por query, lock-in</td></tr>
+                            <tr><td><strong>Snowflake</strong></td><td>Proprietário</td><td>Separação storage/compute</td><td>Custo elevado</td></tr>
+                            <tr><td><strong>DuckDB</strong></td><td>MIT</td><td>"SQLite para analytics"</td><td>Não multi-user</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ========================================================
+            3. DOCUMENTO
+            ========================================================= -->
+            <section id="doc-conceito">
+                <h2>3. Bancos de Documento — Conceito & Modelo</h2>
+                <p>
+                    Armazenam <strong>documentos</strong> (JSON, BSON). Design orientado a agregados: dados
+                    relacionados são embedados, evitando JOINs. Schema flexível por documento.
+                </p>
+                <pre><code class="language-javascript">// Documento MongoDB: dados relacionados embutidos
+        db.produtos.insertOne({
+        _id: ObjectId("684f1a2b3c4d5e6f7a8b9c0d"),
+        nome: "Fone Bluetooth Pro",
+        categoria: "áudio",
+        preco: NumberDecimal("299.90"),
+        variantes: [{ cor: "preto", estoque: 150 }, { cor: "branco", estoque: 80 }],
+        avaliacoes: [{ usuario: "ana", nota: 4.5, comentario: "Ótimo som" }]
+        });</code></pre>
+            </section>
+
+            <section id="doc-caracteristicas">
+                <h2>Características — Tunable Consistency & Sharding</h2>
+                <p>
+                    MongoDB moderno (4.0+) não é puramente BASE. Ele oferece <strong>consistência configurável
+                        (tunable consistency)</strong>: transações ACID multi-documento, leituras com
+                    <code>readConcern: "majority"</code> e escritas com <code>writeConcern: "majority"</code>.
+                    O modelo permite escolher entre performance e consistência por operação.
+                </p>
+                <h3>O custo real de subir a consistência</h3>
+                <p>
+                    "Tunable" não é mágica: <strong>cada degrau acima na consistência custa latência</strong>.
+                    Veja a ordem de grandeza típica em um replica set de 3 nós:
+                </p>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Nível</th><th>Latência típica</th><th>Garantia</th><th>Quando usar</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>w:1</code> (default antigo)</td><td>~1ms</td><td>Confirmação só do primário. Perda de dados se ele cair antes de replicar.</td><td>Logs, telemetria descartável</td></tr>
+                            <tr><td><code>w:majority</code> (default novo)</td><td>~5–15ms</td><td>Espera maioria dos nós confirmarem. Sobrevive a falha de 1 nó.</td><td>Dados de negócio padrão</td></tr>
+                            <tr><td><code>w:majority + j:true</code></td><td>~10–30ms</td><td>Espera fsync no journal de cada nó. Sobrevive a quedas de energia.</td><td>Pagamentos, financeiro</td></tr>
+                            <tr><td><code>readConcern: "linearizable"</code></td><td>~20–100ms</td><td>Leitura mais recente garantida globalmente. Requer round-trip extra.</td><td>Auditoria, regulado</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout callout-tip">
+                    <div class="callout-title"><i class="fa-solid fa-lightbulb"></i> Regra de bolso</div>
+                    <p>Subir de <code>eventual</code> para <code>majority</code> custa de <strong>3× a 10× mais
+                            latência</strong>. Vale para escritas críticas, é desperdício para logs e métricas.
+                        Configure por operação, não globalmente.</p>
+                </div>
+                <h3>Sharding — Anti-Padrão Documentado</h3>
+                <div class="callout callout-danger">
+                    <div class="callout-title"><i class="fa-solid fa-bug"></i> Hot shard por chave monotônica</div>
+                    <p>Chaves de alta cardinalidade que crescem monotonamente (ObjectId, timestamp) direcionam
+                        <strong>todas as novas escritas para o mesmo shard</strong>. Use <strong>hashed
+                            sharding</strong> para distribuir escritas uniformemente quando a chave natural
+                        for monotônica. <strong>Range sharding</strong> é útil para queries por intervalo,
+                        mas perigoso com chaves sequenciais.</p>
+                </div>
+            </section>
+
+            <section id="doc-arquitetura">
+                <h2>Arquitetura Interna</h2>
+                <p>Storage engine <strong>WiredTiger</strong>: B-Trees + MVCC + compressão snappy. O
+                    <strong>oplog</strong> registra operações para replicação.</p>
+                <div class="mermaid-container"><pre class="mermaid">
+graph TD
+    A[Driver] --> B[Mongos Router]
+    B --> C[Config Servers]
+    B --> D[Shard 1]
+    B --> E[Shard 2]
+    D --> F[(WiredTiger)]
+    E --> G[(WiredTiger)]
+                </pre></div>
+            </section>
+
+            <section id="doc-linguagens">
+                <h2>Queries & APIs</h2>
+                <pre><code class="language-javascript">// Aggregation pipeline
+        db.vendas.aggregate([
+        { $match: { data: { $gte: new Date('2026-04-01') } } },
+        { $unwind: '$itens' },
+        { $group: { _id: '$itens.categoria', total: { $sum: '$itens.preco' } } },
+        { $sort: { total: -1 } }, { $limit: 10 }
+        ]);</code></pre>
+            </section>
+
+            <section id="doc-casos">
+                <h2>Casos de Uso Reais</h2>
+                <ul>
+                    <li><strong>Adobe:</strong> Creative Cloud — metadados de ativos com schema flexível.</li>
+                    <li><strong>eBay:</strong> Catálogo de produtos com milhões de SKUs.</li>
+                    <li><strong>Coinbase:</strong> Dados de exchange com histórico embutido.</li>
+                </ul>
+            </section>
+
+            <section id="doc-nao-usar">
+                <h2>Quando NÃO Usar</h2>
+                <ul>
+                    <li><strong>Relacionamentos N:N complexos:</strong> Use grafo ou relacional.</li>
+                    <li><strong>Relatórios analíticos pesados:</strong> Aggregation pipeline lento vs SQL colunar.</li>
+                </ul>
+            </section>
+
+            <section id="doc-produtos">
+                <h2>Produtos</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Banco</th><th>Licença</th><th>Destaque</th><th>Limitação</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>MongoDB</strong></td><td>SSPL/Cloud</td><td>Atlas, tunable consistency</td><td>RAM alto, licença controversa</td></tr>
+                            <tr><td><strong>Couchbase</strong></td><td>Apache 2.0</td><td>SQL++ (N1QL), cache integrado</td><td>Comunidade menor</td></tr>
+                            <tr><td><strong>Firestore</strong></td><td>GCP Proprietário</td><td>Serverless, real-time</td><td>Vendor lock-in</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ========================================================
+            4. KEY-VALUE
+            ========================================================= -->
+            <section id="kv-conceito">
+                <h2>4. Bancos Key-Value — Conceito & Modelo</h2>
+                <p>Modelo mais simples: <strong>chave → valor</strong>. Redis estende com listas, sets, sorted
+                    sets, hashes, streams. Latências em microssegundos.</p>
+                <pre><code class="language-javascript">// Redis: estruturas de dados
+        SET usuario:42:session "abc123" EX 3600
+        LPUSH fila:emails "bem-vindo:joao@exemplo.com"
+        ZADD ranking:jogadores 1500 "alice" 1420 "bob"
+        HSET produto:789 nome "Teclado" preco 199.90 estoque 45</code></pre>
+            </section>
+
+            <section id="kv-caracteristicas">
+                <h2>Características</h2>
+                <p>
+                    O <strong>event loop principal do Redis é single-threaded</strong> — a execução dos comandos
+                    acontece em uma única thread, o que garante atomicidade sem precisar de locks e dá previsibilidade
+                    de latência. <strong>Mas atenção</strong>: a partir do <strong>Redis 6.0</strong>, o
+                    <strong>I/O de rede</strong> (leitura/parsing de bytes do socket e escrita das respostas) pode
+                    ser delegado a <strong>múltiplas threads</strong> via <code>io-threads</code>. Em workloads
+                    com muitos clientes concorrentes, isso aumenta o throughput sem quebrar a atomicidade.
+                </p>
+                <div class="callout callout-warning">
+                    <div class="callout-title"><i class="fa-solid fa-triangle-exclamation"></i> Meia-verdade comum</div>
+                    <p>Dizer apenas que "Redis é single-threaded" é uma simplificação que pode levar a decisões
+                        ruins (ex: subdimensionar CPU em servidores com muitos clientes). O <strong>processamento
+                            de comandos</strong> é single-threaded; o <strong>I/O de rede</strong> não é mais.
+                        Tarefas de background como <code>BGSAVE</code> (RDB), <code>BGREWRITEAOF</code> e expiração
+                        lazy também rodam fora da thread principal.</p>
+                </div>
+                <p>Persistência: RDB (snapshots) + AOF (append-only file). Cluster com 16384 hash slots para
+                    sharding horizontal.</p>
+            </section>
+
+            <section id="kv-arquitetura">
+                <h2>Arquitetura Interna</h2>
+                <p>Estruturas otimizadas: SDS (strings O(1)), Skip Lists (sorted sets O(log N)), Quicklists,
+                    Rax (Radix Tree para streams).</p>
+                <div class="mermaid-container"><pre class="mermaid">
+graph LR
+    A[Cliente] --> B[Event Loop]
+    B --> C{Comando}
+    C -->|SET| D[Hash Table]
+    C -->|ZADD| E[Skip List]
+    D --> F[(RAM)]
+                </pre></div>
+            </section>
+
+            <section id="kv-casos">
+                <h2>Casos de Uso</h2>
+                <ul>
+                    <li><strong>Twitter:</strong> Timeline cache.</li>
+                    <li><strong>GitHub:</strong> Job queues (Sidekiq), rate limiting.</li>
+                    <li><strong>OpenAI:</strong> Rate limiting e cache de API.</li>
+                </ul>
+            </section>
+
+            <section id="kv-produtos">
+                <h2>Produtos</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Banco</th><th>Licença</th><th>Destaque</th><th>Limitação</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Redis</strong></td><td>RSALv2/SSPL</td><td>Estruturas ricas, pub/sub, I/O multi-threaded (6.0+)</td><td>RAM cara; execução de comandos ainda single-thread</td></tr>
+                            <tr><td><strong>DynamoDB</strong></td><td>AWS Proprietário</td><td>Serverless, auto-scaling</td><td>Lock-in</td></tr>
+                            <tr><td><strong>Memcached</strong></td><td>BSD</td><td>Multi-threaded, simples</td><td>Sem persistência</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ========================================================
+            5. WIDE-COLUMN
+            ========================================================= -->
+            <section id="wc-conceito">
+                <h2>5. Bancos Wide-Column — Conceito & Modelo</h2>
+                <p>
+                    Organizam dados em <strong>linhas</strong> com <strong>row key</strong>, mas cada linha pode
+                    ter <strong>colunas diferentes</strong> (modelo esparso). Colunas agrupadas em
+                    <strong>column families</strong>. Otimizado para escritas rápidas e escalabilidade horizontal.
+                    <strong>Não confundir com bancos colunares (OLAP)</strong> — veja a distinção na seção 2.
+                </p>
+                <pre><code class="language-sql">-- CQL (Cassandra): schema
+        CREATE TABLE eventos_usuario (
+        usuario_id UUID,
+        timestamp TIMESTAMP,
+        tipo TEXT,
+        payload TEXT,
+        PRIMARY KEY (usuario_id, timestamp)
+        ) WITH CLUSTERING ORDER BY (timestamp DESC);</code></pre>
+            </section>
+
+            <section id="wc-modelagem">
+                <h2>Modelagem Query-First — O Paradigma do Wide-Column</h2>
+                <p>
+                    Diferentemente do modelo relacional (onde você modela entidades e normaliza), no Cassandra
+                    você <strong>modela para as queries que vai executar</strong>. Isso significa que você pode
+                    <strong>duplicar dados em múltiplas tabelas</strong> para atender a diferentes padrões de
+                    acesso. Não há JOINs — cada query deve bater em uma única tabela (ou partição).
+                </p>
+                <pre><code class="language-sql">-- Mesma informação modelada para DUAS queries diferentes
+        -- Tabela 1: posts de um autor (query por autor)
+        CREATE TABLE posts_por_autor (
+        autor_id UUID,
+        data TIMESTAMP,
+        titulo TEXT,
+        conteudo TEXT,
+        PRIMARY KEY (autor_id, data)
+        ) WITH CLUSTERING ORDER BY (data DESC);
+
+        -- Tabela 2: posts por tag (query por tag)
+        CREATE TABLE posts_por_tag (
+        tag TEXT,
+        data TIMESTAMP,
+        autor_id UUID,
+        titulo TEXT,
+        PRIMARY KEY (tag, data)
+        ) WITH CLUSTERING ORDER BY (data DESC);
+        -- Os dados são duplicados. Isso é intencional e necessário no Cassandra.
+        -- Tentar "normalizar" aqui seria um anti-padrão.</code></pre>
+                <div class="callout callout-tip">
+                    <div class="callout-title"><i class="fa-solid fa-lightbulb"></i> Regra de ouro</div>
+                    <p>Modele suas tabelas a partir das queries, não das entidades. Se uma query nova surgir e não
+                        puder ser atendida pelas tabelas existentes, crie uma nova tabela com os dados duplicados.
+                        Isso é <strong>query-first modeling</strong>.</p>
+                </div>
+            </section>
+
+            <section id="wc-arquitetura">
+                <h2>Arquitetura Interna — LSM Tree, Bloom Filters & Tombstones</h2>
+                <p>
+                    Cassandra usa <strong>LSM Trees (Log-Structured Merge Trees)</strong>. Escritas → MemTable (RAM)
+                    + Commit Log (WAL). Flush → SSTable imutável. <strong>Compaction</strong> mergeia SSTables,
+                    removendo <strong>tombstones</strong> (marcadores de deleção).
+                </p>
+                <div class="callout callout-tip">
+                    <div class="callout-title"><i class="fa-solid fa-book-open"></i> Por baixo dos panos — LSM Tree</div>
+                    <p><strong>B-Tree</strong> é como um <em>índice de enciclopédia</em>: bem organizado, ótimo
+                        para ler, mas cada atualização exige reorganizar páginas no lugar (escrita aleatória,
+                        lenta).<br><br>
+                        <strong>LSM Tree</strong> é como um <em>diário de anotações</em>: você sempre escreve
+                        no fim da página atual (RAM/MemTable) e, quando ela enche, arranca a folha e arquiva
+                        como SSTable imutável. Periodicamente, um "bibliotecário" (o processo de
+                        <strong>compaction</strong>) junta várias folhas antigas, descarta repetições e
+                        deleções (<strong>tombstones</strong>) e produz folhas novas, ordenadas.<br><br>
+                        <strong>Por que isso favorece a escrita?</strong> Toda escrita vira um <em>append</em>
+                        sequencial — o tipo de I/O mais barato em SSD e HDD. Em troca, leitura é mais cara
+                        (pode ter que olhar várias SSTables) e a compaction consome CPU e I/O em background.
+                        Por isso bancos LSM brilham em workloads <strong>write-heavy</strong> (IoT, logs,
+                        métricas, eventos).</p>
+                </div>
+                <p><strong>Bloom Filter:</strong> estrutura probabilística em RAM que responde rapidamente se uma
+                    chave <em>pode</em> existir em uma SSTable (falso positivo possível, falso negativo não).
+                    É como um <em>porteiro com lista de convidados aproximada</em>: se ele diz "não está na
+                    lista", tem certeza; se diz "talvez esteja", você precisa confirmar entrando. Reduz I/O
+                    drasticamente em consultas pontuais.</p>
+                <div class="mermaid-container"><pre class="mermaid">
+graph TD
+    A[Write] --> B[Commit Log]
+    A --> C[MemTable]
+    C -->|Flush| D[(SSTable)]
+    E[Read] --> F[Bloom Filter]
+    F --> C
+    F --> D
+                </pre></div>
+            </section>
+
+            <section id="wc-casos">
+                <h2>Casos de Uso Reais</h2>
+                <ul>
+                    <li><strong>Netflix:</strong> Cassandra para bilhões de eventos de streaming/dia.</li>
+                    <li><strong>Apple:</strong> iCloud — 75.000+ nós gerenciando petabytes.</li>
+                    <li><strong>Discord:</strong> <strong>Migrou do Cassandra para ScyllaDB</strong> (2022) por
+                        problemas de GC da JVM em clusters massivos. Este case é a principal motivação para o
+                        ScyllaDB (C++, shard-per-core, latência consistente).</li>
+                </ul>
+            </section>
+
+            <section id="wc-produtos">
+                <h2>Produtos</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Banco</th><th>Licença</th><th>Destaque</th><th>Limitação</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Cassandra</strong></td><td>Apache 2.0</td><td>Escala linear, multi-DC</td><td>GC pauses, sem JOINs</td></tr>
+                            <tr><td><strong>ScyllaDB</strong></td><td>AGPL/Enterprise</td><td>C++, 10x throughput</td><td>Compatibilidade <100%</td></tr>
+                            <tr><td><strong>HBase</strong></td><td>Apache 2.0</td><td>HDFS nativo</td><td>Complexo, depende do Hadoop</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ========================================================
+            6. GRAFO
+            ========================================================= -->
+            <section id="grafo-conceito">
+                <h2>6. Bancos de Grafo — Conceito & Modelo</h2>
+                <p>
+                    Modelam dados como <strong>nós</strong> e <strong>arestas</strong>, ambos com propriedades.
+                    O poder está nas consultas de <strong>travessia</strong> (traversal) — encontrar caminhos,
+                    padrões e conexões indiretas.
+                </p>
+                <pre><code class="language-cypher">// Cypher (Neo4j): estrutura e consulta
+        CREATE (alice:User {name: 'Alice'})-[:FRIEND {desde: date('2024-01-15')}]->(bob:User {name: 'Bob'});
+
+        -- Amigos de amigos (2º grau) que não são amigos diretos
+        MATCH (eu:User {name: 'Alice'})-[:FRIEND]->(amigo)-[:FRIEND]->(amigo2)
+        WHERE NOT (eu)-[:FRIEND]->(amigo2) AND eu <> amigo2
+        RETURN amigo2.name, COUNT(*) AS conexoes LIMIT 10;</code></pre>
+            </section>
+
+            <section id="grafo-adjacency">
+                <h2>Index-Free Adjacency — O Diferencial dos Grafos</h2>
+                <p>
+                    O conceito que diferencia bancos de grafo de relacionais é a <strong>index-free adjacency</strong>.
+                    Em um banco relacional, um JOIN entre <code>usuarios</code> e <code>amizades</code> requer
+                    busca em índice (O log N) para cada hop. Em um banco de grafo nativo, cada nó mantém
+                    <strong>ponteiros físicos diretos</strong> para seus vizinhos (arestas). Uma travessia de
+                    3 hops no grafo é O(1) por hop — custo constante, independente do tamanho total do banco.
+                </p>
+                <div class="callout callout-tip">
+                    <div class="callout-title"><i class="fa-solid fa-book-open"></i> Por baixo dos panos — analogia</div>
+                    <p>Imagine uma <em>festa</em>:<br>
+                        • <strong>Relacional:</strong> para descobrir os amigos do João, você abre a lista
+                        de presença (índice), busca "João" (O log N), depois consulta a tabela de amizades.
+                        Para amigos dos amigos, repete tudo. A cada hop, o índice cresce com o número de
+                        pessoas.<br>
+                        • <strong>Grafo nativo:</strong> o João tem um <em>caderninho no bolso</em> com nomes
+                        e endereços dos amigos. Você vai direto, sem consultar lista nenhuma. Cada hop é uma
+                        consulta direta (O(1)) — não importa se a festa tem 100 ou 100 milhões de pessoas.
+                        <br><br>
+                        Por isso travessias profundas (amigos-de-amigos-de-amigos, detecção de fraude por
+                        caminhos suspeitos, recomendação por similaridade de comunidade) são <strong>ordens
+                            de grandeza mais rápidas</strong> em bancos de grafo nativos.</p>
+                </div>
+                <p>
+                    <em>Mini-aside sobre complexidade:</em> <strong>O log N</strong> significa "tempo cresce
+                    proporcional ao logaritmo do tamanho dos dados" — buscar em 1 bilhão de registros custa
+                    ~30 saltos em uma B-Tree. <strong>O(1)</strong> significa "tempo constante" — não muda com
+                    o tamanho. Para 1 hop a diferença é pequena; para 5 hops em grafo gigante, é a diferença
+                    entre milissegundos e minutos.
+                </p>
+                <h3>Supernodes — O Calcanhar de Aquiles</h3>
+                <p>
+                    Um <strong>supernode</strong> é um nó com um número extremamente alto de arestas (ex: uma
+                    celebridade com milhões de seguidores). Travessias que passam por supernodes degradam
+                    performance drasticamente, pois todas as arestas precisam ser avaliadas. Em produção, é
+                    comum modelar supernodes com <strong>meta-arestas</strong> ou limitar a profundidade
+                    da travessia.
+                </p>
+            </section>
+
+            <section id="grafo-casos">
+                <h2>Casos de Uso</h2>
+                <ul>
+                    <li><strong>LinkedIn:</strong> Grafo de conexões profissionais — "pessoas que você talvez conheça".</li>
+                    <li><strong>PayPal:</strong> Detecção de fraude via padrões em grafos de transações.</li>
+                    <li><strong>NASA:</strong> Neo4j para dependências entre componentes de engenharia.</li>
+                </ul>
+            </section>
+
+            <section id="grafo-produtos">
+                <h2>Produtos</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Banco</th><th>Licença</th><th>Destaque</th><th>Limitação Técnica</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Neo4j</strong></td><td>GPLv3/Enterprise</td><td>Cypher, index-free adjacency</td><td>Sharding de grafos é complexo (supernodes)</td></tr>
+                            <tr><td><strong>ArangoDB</strong></td><td>Apache 2.0</td><td>Multi-modelo (grafo+doc+KV)</td><td>Performance de travessia inferior a bancos nativos de grafo</td></tr>
+                            <tr><td><strong>Amazon Neptune</strong></td><td>AWS Proprietário</td><td>Managed, Gremlin/SPARQL</td><td>Vendor lock-in, custo elevado</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ========================================================
+            7. TIME-SERIES
+            ========================================================= -->
+            <section id="ts-conceito">
+                <h2>7. Bancos Time-Series — Conceito & Modelo</h2>
+                <p>
+                    Otimizados para dados com <strong>timestamp</strong>. Operações típicas: inserções sequenciais,
+                    consultas por intervalo e agregações temporais.
+                </p>
+                <h3>Retention Policies & Continuous Downsampling</h3>
+                <p>
+                    Diferentemente de um colunar comum, TSDBs possuem <strong>retention policies</strong> (ex:
+                    deletar dados brutos após 30 dias) e <strong>continuous downsampling</strong> — agregação
+                    automática de dados antigos em resoluções menores (1s → médias de 1min → médias de 1h).
+                </p>
+                <pre><code class="language-sql">-- Exemplo InfluxDB (Flux simplificado)
+        from(bucket: "metricas")
+        |> range(start: -30d)
+        |> filter(fn: (r) => r._measurement == "cpu")
+        |> aggregateWindow(every: 1h, fn: mean)
+        |> yield(name: "cpu_horaria")</code></pre>
+            </section>
+
+            <section id="ts-casos">
+                <h2>Casos de Uso</h2>
+                <ul>
+                    <li><strong>Netflix:</strong> Atlas (InfluxDB) para 200M+ métricas.</li>
+                    <li><strong>Uber:</strong> M3 para observabilidade de microserviços.</li>
+                    <li><strong>CERN:</strong> InfluxDB para sensores do LHC.</li>
+                </ul>
+                <h3>Quando NÃO Usar TSDB</h3>
+                <div class="callout callout-danger">
+                    <div class="callout-title"><i class="fa-solid fa-ban"></i> Anti-padrões de TSDB</div>
+                    <ul style="margin-bottom:0;">
+                        <li><strong>Atualizações frequentes em registros passados:</strong> TSDBs assumem
+                            dados <strong>imutáveis e append-only</strong>. Updates retroativos são caros e,
+                            em alguns engines, simplesmente não suportados de forma performática.</li>
+                        <li><strong>Volumes moderados de dados temporais:</strong> Se você tem &lt; 100GB e
+                            poucos milhares de inserções por segundo, <strong>PostgreSQL com índice em
+                                <code>created_at</code></strong> + <code>BRIN</code> ou TimescaleDB resolve
+                            com menos complexidade operacional.</li>
+                        <li><strong>Queries relacionais complexas (JOINs):</strong> InfluxDB não tem JOIN
+                            tradicional. Se sua análise exige cruzar séries com dimensões de negócio
+                            complexas, considere ClickHouse ou um data warehouse.</li>
+                        <li><strong>Alta cardinalidade de tags:</strong> InfluxDB (TSM) degrada severamente
+                            quando o produto cartesiano de tags ultrapassa milhões de séries únicas.
+                            Use Prometheus + Thanos ou ClickHouse nesses casos.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="ts-produtos">
+                <h2>Produtos</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Banco</th><th>Licença</th><th>Destaque</th><th>Limitação</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>InfluxDB</strong></td><td>MIT/Cloud</td><td>Flux, TSM engine</td><td>Alta cardinalidade de tags</td></tr>
+                            <tr><td><strong>TimescaleDB</strong></td><td>Apache 2.0/TS</td><td>Extensão PG, hypertables</td><td>Compressão < InfluxDB</td></tr>
+                            <tr><td><strong>Prometheus</strong></td><td>Apache 2.0</td><td>Pull model, CNCF</td><td>Longo prazo via Thanos/Cortex</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ========================================================
+            8. SEARCH
+            ========================================================= -->
+            <section id="search-conceito">
+                <h2>8. Bancos de Search — Conceito & Modelo</h2>
+                <p>
+                    Elasticsearch: construído sobre <strong>Apache Lucene</strong>, usa <strong>índices
+                        invertidos</strong>. Relevância via <strong>BM25</strong>. Índices em shards.
+                </p>
+                <pre><code class="language-javascript">// Elasticsearch: mapeamento e indexação
+        PUT /produtos
+        { "mappings": { "properties": {
+        "nome": { "type": "text", "analyzer": "portuguese" },
+        "preco": { "type": "float" },
+        "categoria": { "type": "keyword" }
+        }}}
+        POST /produtos/_doc
+        { "nome": "Fone Bluetooth", "preco": 299.90, "categoria": "áudio" }</code></pre>
+            </section>
+
+            <section id="search-casos">
+                <h2>Casos de Uso</h2>
+                <ul>
+                    <li><strong>Uber:</strong> Busca de endereços e geocoding.</li>
+                    <li><strong>Tinder:</strong> Matching geo-espacial.</li>
+                    <li><strong>Wikipedia:</strong> Full-text em milhões de artigos.</li>
+                </ul>
+            </section>
+
+            <section id="search-produtos">
+                <h2>Produtos</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Banco</th><th>Licença</th><th>Destaque</th><th>Limitação</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Elasticsearch</strong></td><td>ELv2/SSPL</td><td>ELK, Kibana, ML</td><td>RAM, tuning complexo</td></tr>
+                            <tr><td><strong>OpenSearch</strong></td><td>Apache 2.0</td><td>Fork AWS compatível</td><td>Comunidade consolidando</td></tr>
+                            <tr><td><strong>Meilisearch</strong></td><td>MIT</td><td>Leve, typo-tolerant</td><td>Menos features</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ========================================================
+            9. VETORIAL
+            ========================================================= -->
+            <section id="vec-conceito">
+                <h2>9. Bancos Vetoriais — Conceito & Embeddings</h2>
+                <p>
+                    Armazenam e indexam <strong>vetores densos</strong> (embeddings) de 300 a 4096 dimensões.
+                    Algoritmo dominante: <strong>HNSW</strong> — grafo em múltiplas camadas, busca O(log N)
+                    aproximada.
+                </p>
+                <pre><code class="language-python"># Embedding + upsert no Pinecone
+        from openai import OpenAI
+        from pinecone import Pinecone
+        emb = OpenAI().embeddings.create(
+        model="text-embedding-3-large",
+        input="Fone Bluetooth com cancelamento de ruído"
+        ).data[0].embedding
+        Pinecone().Index("produtos").upsert(
+        vectors=[("prod-789", emb, {"nome": "Fone Bluetooth Pro"})]
+        )</code></pre>
+            </section>
+
+            <section id="vec-rag">
+                <h2>RAG & IA Generativa</h2>
+                <p>
+                    <strong>Retrieval-Augmented Generation:</strong> chunking → embedding → armazenamento →
+                    busca dos K chunks mais similares → injeção no prompt do LLM.
+                </p>
+                <div class="mermaid-container"><pre class="mermaid">
+graph LR
+    A[Documentos] --> B[Chunking]
+    B --> C[Embedding]
+    C --> D[(Banco Vetorial)]
+    E[Pergunta] --> F[Embedding]
+    F --> D
+    D --> G[Top-K Chunks]
+    G --> H[Prompt]
+    H --> I[LLM]
+    I --> J[Resposta]
+                </pre></div>
+            </section>
+
+            <section id="vec-hybrid">
+                <h2>Hybrid Search — O Estado da Arte em 2026</h2>
+                <p>
+                    Ninguém usa apenas busca vetorial pura em produção. O padrão moderno é <strong>hybrid
+                        search</strong>: combinar resultados de <strong>busca vetorial</strong> (similaridade
+                    semântica) com <strong>busca lexical</strong> (BM25 / texto pleno) e fundi-los via
+                    <strong>Reciprocal Rank Fusion (RRF)</strong> ou pesos ajustados (weighted scoring).
+                </p>
+                <div class="mermaid-container"><pre class="mermaid">
+graph TD
+    A[Query do Usuário] --> B[Embedding da Query]
+    A --> C[Análise Lexical]
+    B --> D[Índice HNSW]
+    C --> E[Índice Invertido BM25]
+    D --> F[Top-K Vetorial]
+    E --> G[Top-K Lexical]
+    F --> H[Fusão RRF]
+    G --> H
+    H --> I[Resultado Final Ranqueado]
+                </pre></div>
+                <p>
+                    Bancos como <strong>Weaviate</strong> e <strong>Elasticsearch</strong> (8.x+) oferecem hybrid
+                    search nativo. O <strong>Pinecone</strong> recentemente adicionou suporte a sparse vectors
+                    para permitir a mesma fusão. Essa combinação captura tanto a intenção semântica quanto a
+                    precisão de palavras-chave exatas.
+                </p>
+            </section>
+
+            <section id="vec-nao-usar">
+                <h2>Quando NÃO Usar Banco Vetorial</h2>
+                <div class="callout callout-danger">
+                    <div class="callout-title"><i class="fa-solid fa-ban"></i> Anti-padrões de vetorial</div>
+                    <ul style="margin-bottom:0;">
+                        <li><strong>Volume pequeno (&lt; 1M vetores):</strong> Um índice <code>pgvector</code>
+                            HNSW em PostgreSQL resolve sem custo extra de SaaS dedicado. Pinecone só compensa
+                            em escala.</li>
+                        <li><strong>Busca exata por palavra-chave:</strong> Para "encontrar produto cujo SKU é
+                            <code>ABC-123</code>", índice invertido (Elasticsearch) ou simples B-Tree são
+                            ordens de grandeza mais rápidos e baratos. Vetorial é para <em>significado</em>,
+                            não <em>literal</em>.</li>
+                        <li><strong>Filtros complexos como critério primário:</strong> Se 90% das queries
+                            filtram por país + categoria + preço e só 10% precisam de similaridade, o vetorial
+                            vira gargalo. Use SQL com filtros + reranking por similaridade no final.</li>
+                        <li><strong>Dados que mudam toda hora:</strong> Re-embedding em massa é caro (latência
+                            + custo do modelo). Vetorial brilha em corpora relativamente estáveis (docs,
+                            catálogo, base de conhecimento).</li>
+                        <li><strong>Substituir banco transacional:</strong> Vetorial não tem ACID, não é fonte
+                            de verdade. Mantenha PG/Mongo como master e o vetorial como índice secundário
+                            (igual ao papel do Elasticsearch).</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="vec-produtos">
+                <h2>Produtos</h2>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Banco</th><th>Licença</th><th>Índice</th><th>Hybrid Search</th><th>Limitação</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Pinecone</strong></td><td>SaaS</td><td>HNSW+PQ</td><td>Sparse vectors (beta)</td><td>Lock-in, custo</td></tr>
+                            <tr><td><strong>Weaviate</strong></td><td>BSD-3</td><td>HNSW</td><td>Nativo (BM25+vetor)</td><td>Self-hosted requer tuning</td></tr>
+                            <tr><td><strong>Qdrant</strong></td><td>Apache 2.0</td><td>HNSW</td><td>Filtros + vetor</td><td>Ecossistema novo</td></tr>
+                            <tr><td><strong>pgvector</strong></td><td>MIT</td><td>IVFFlat/HNSW</td><td>Via SQL + tsvector</td><td>Menos otimizado</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout callout-tip">
+                    <div class="callout-title"><i class="fa-solid fa-lightbulb"></i> Pinecone vs pgvector</div>
+                    <p>São <strong>alternativas</strong>, não complementares. Use Pinecone/Weaviate se precisar de
+                        hybrid search avançado. Use pgvector se já estiver no ecossistema PostgreSQL e quiser
+                        evitar sincronização de dois bancos.</p>
+                </div>
+            </section>
+
+            <!-- ========================================================
+            APÊNDICES
+            ========================================================= -->
+            <section id="extras-comparativo">
+                <h2>Tabela Comparativa Geral</h2>
+                <p>
+                    Agora com duas colunas extras para apoiar decisões de mundo real:
+                    <strong>💰 Custo Relativo</strong> (TCO típico em escala média —
+                    <code>$</code> barato, <code>$$$$</code> caro) e
+                    <strong>🛠️ Carga Operacional</strong> (esforço de setup + manutenção em produção).
+                </p>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Família</th><th>Modelo</th><th>Consistência</th><th>Escala</th><th>Latência</th><th>💰 Custo</th><th>🛠️ Op. Burden</th><th>Principal</th></tr></thead>
+                        <tbody>
+                            <tr><td>Relacional</td><td>Tabelas</td><td>ACID</td><td>Vertical (+ shard)</td><td>1-10ms</td><td>$$</td><td>Baixo (managed) / Médio (self)</td><td>PostgreSQL</td></tr>
+                            <tr><td>Colunar/OLAP</td><td>Colunas</td><td>Eventual</td><td>Horizontal massiva</td><td>100ms-10s</td><td>$$$ (BigQuery) / $ (DuckDB)</td><td>Médio</td><td>ClickHouse</td></tr>
+                            <tr><td>Documento</td><td>JSON</td><td><strong>Tunable</strong></td><td>Horizontal</td><td>1-10ms</td><td>$$$ (Atlas)</td><td>Médio (replica set + shard)</td><td>MongoDB</td></tr>
+                            <tr><td>Key-Value</td><td>KV</td><td>Eventual/Forte</td><td>Horizontal</td><td>&lt;1ms</td><td>$$$$ (RAM!)</td><td>Baixo (Redis), Zero (DynamoDB)</td><td>Redis</td></tr>
+                            <tr><td>Wide-Column</td><td>Rows+Cols</td><td>Eventual</td><td>Horizontal linear</td><td>1-5ms</td><td>$$</td><td><strong>Alto</strong> (clusters, GC, compaction)</td><td>Cassandra</td></tr>
+                            <tr><td>Grafo</td><td>Nós+Arestas</td><td>ACID</td><td>Vertical (+ shard)</td><td>5-50ms</td><td>$$$ (Enterprise)</td><td>Médio-Alto (sharding complexo)</td><td>Neo4j</td></tr>
+                            <tr><td>Time-Series</td><td>Timestamp</td><td>Eventual</td><td>Horizontal</td><td>1-10ms</td><td>$$</td><td>Médio (retention, downsampling)</td><td>InfluxDB</td></tr>
+                            <tr><td>Search</td><td>Índice Invertido</td><td>Eventual</td><td>Horizontal</td><td>10-100ms</td><td>$$$ (RAM + disco)</td><td><strong>Alto</strong> (tuning de mapping/analyzer)</td><td>Elasticsearch</td></tr>
+                            <tr><td>Vetorial</td><td>Vetores</td><td>Eventual</td><td>Horizontal</td><td>5-50ms</td><td>$$$$ (SaaS) / $$ (self)</td><td>Baixo (SaaS), Médio (self)</td><td>Pinecone</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout callout-warning">
+                    <div class="callout-title"><i class="fa-solid fa-sack-dollar"></i> Sobre-engenharia mata startups</div>
+                    <p>Escolher Cassandra ou Neo4j para um MVP com 2 devs e 3 semanas de prazo é o tipo de
+                        decisão que afunda o produto antes dele validar mercado. Comece com
+                        <strong>PostgreSQL + Redis</strong> em quase todos os casos — eles cobrem ~80% dos
+                        cenários até centenas de milhares de usuários, com carga operacional baixa. Migre para
+                        soluções especializadas <em>só quando a dor for real e mensurável</em>.</p>
+                </div>
+            </section>
+
+            <section id="extras-glossario">
+                <h2>Glossário Para o Trainee</h2>
+                <p>
+                    Os termos mais densos do material, explicados sem usar mais jargão. Use como referência
+                    rápida ao ler outras seções.
+                </p>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Termo</th><th>O que é (em uma frase)</th><th>Analogia</th><th>Onde aparece</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>ACID</strong></td><td>Garantias de transação: Atomicidade, Consistência, Isolamento, Durabilidade.</td><td>Caixa eletrônico que ou completa a transferência inteira, ou não tira nada da sua conta.</td><td>Relacional, MongoDB 4+</td></tr>
+                            <tr><td><strong>BASE</strong></td><td>Basically Available, Soft state, Eventual consistency — alternativa relaxada ao ACID.</td><td>Curtida no Instagram: pode aparecer agora ou em 200ms; o sistema converge.</td><td>NoSQL, Cassandra</td></tr>
+                            <tr><td><strong>CAP</strong></td><td>Em uma partição de rede, você escolhe entre Consistência ou Disponibilidade.</td><td>Telefone cortado: ou você confia na última info que ouviu (A), ou desliga e pede para repetir (C).</td><td>Sistemas distribuídos</td></tr>
+                            <tr><td><strong>PACELC</strong></td><td>Extensão do CAP: mesmo SEM partição, troca latência (L) por consistência (C).</td><td>Drive-thru: confirmar pedido com gerente (consistência) vs. já entregar (latência).</td><td>Modelos distribuídos modernos</td></tr>
+                            <tr><td><strong>WAL</strong></td><td>Write-Ahead Log: registrar a operação em um log antes de aplicar nos dados.</td><td>Comanda do garçom: anota antes de mexer no caixa.</td><td>PostgreSQL, Cassandra, SQLite</td></tr>
+                            <tr><td><strong>MVCC</strong></td><td>Multi-Version Concurrency Control: cada transação vê seu snapshot, leituras não bloqueiam escritas.</td><td>Google Docs com histórico — cada um vê sua revisão consistente.</td><td>PostgreSQL, MongoDB, Oracle</td></tr>
+                            <tr><td><strong>B-Tree</strong></td><td>Árvore balanceada de busca, ótima para leitura ordenada e por chave.</td><td>Índice remissivo de enciclopédia.</td><td>Quase todo banco relacional</td></tr>
+                            <tr><td><strong>LSM Tree</strong></td><td>Log-Structured Merge — escreve sempre no fim (rápido), depois mergeia em background.</td><td>Diário de anotações: você sempre escreve na última página.</td><td>Cassandra, RocksDB, ScyllaDB</td></tr>
+                            <tr><td><strong>SSTable</strong></td><td>Sorted String Table: arquivo imutável e ordenado gerado pelo flush da MemTable.</td><td>Página arquivada do diário — não muda mais, fica catalogada.</td><td>LSM-based DBs</td></tr>
+                            <tr><td><strong>Tombstone</strong></td><td>Marcador de deleção em LSM — o registro continua até a compaction limpá-lo.</td><td>Post-it "EXCLUÍDO" colado em cima de uma anotação no diário.</td><td>Cassandra, ScyllaDB</td></tr>
+                            <tr><td><strong>Compaction</strong></td><td>Processo de mesclar SSTables, removendo duplicatas e tombstones.</td><td>Bibliotecário juntando folhas antigas e refazendo a organização.</td><td>LSM-based DBs</td></tr>
+                            <tr><td><strong>Bloom Filter</strong></td><td>Estrutura em RAM que diz "talvez exista" ou "definitivamente não existe".</td><td>Porteiro com lista aproximada de convidados.</td><td>Cassandra, HBase</td></tr>
+                            <tr><td><strong>Sharding</strong></td><td>Dividir os dados em pedaços (shards) hospedados em máquinas diferentes.</td><td>Lista telefônica dividida por inicial da letra entre 26 prédios.</td><td>Sistemas distribuídos</td></tr>
+                            <tr><td><strong>Hashed Sharding</strong></td><td>Aplicar hash na chave para distribuir uniformemente.</td><td>Fila do banco: senha aleatória sorteada, não por ordem de chegada.</td><td>MongoDB, DynamoDB</td></tr>
+                            <tr><td><strong>Cardinalidade</strong></td><td>Quantos valores distintos uma coluna/tag tem.</td><td>Coluna "país" tem cardinalidade baixa (~200); coluna "user_id" tem altíssima.</td><td>Índices, TSDBs</td></tr>
+                            <tr><td><strong>Index-Free Adjacency</strong></td><td>Cada nó já guarda ponteiro físico para os vizinhos — sem precisar de índice.</td><td>Caderninho de telefone no bolso vs. consultar a lista telefônica toda vez.</td><td>Neo4j, grafos nativos</td></tr>
+                            <tr><td><strong>Supernode</strong></td><td>Nó com altíssimo grau (milhões de arestas) — gargalo em travessias.</td><td>Cristiano Ronaldo no Instagram: ninguém quer iterar pelos 600M seguidores.</td><td>Grafos sociais</td></tr>
+                            <tr><td><strong>O(log N)</strong></td><td>Tempo cresce muito devagar com o tamanho — 1 bilhão = ~30 saltos.</td><td>Subir escada onde cada degrau dobra a área coberta.</td><td>B-Tree, HNSW</td></tr>
+                            <tr><td><strong>O(1)</strong></td><td>Tempo constante — não importa o tamanho dos dados.</td><td>Pegar a chave do bolso, sempre o mesmo gesto.</td><td>Hash table, grafo nativo (por hop)</td></tr>
+                            <tr><td><strong>HNSW</strong></td><td>Hierarchical Navigable Small World: grafo em camadas para busca vetorial aproximada.</td><td>Atlas com mapas em zoom — começa no mundo, desce até o bairro.</td><td>Pinecone, Weaviate, pgvector</td></tr>
+                            <tr><td><strong>Embedding</strong></td><td>Vetor numérico que representa o "significado" de um texto/imagem.</td><td>Coordenadas no mapa cultural — "rei" e "rainha" ficam pertinho.</td><td>RAG, busca semântica</td></tr>
+                            <tr><td><strong>BM25</strong></td><td>Algoritmo clássico de relevância em busca por palavra-chave.</td><td>Score do Google antiga escola: importa frequência + raridade do termo.</td><td>Elasticsearch, Lucene</td></tr>
+                            <tr><td><strong>RRF</strong></td><td>Reciprocal Rank Fusion: combinar rankings de fontes diferentes em um único.</td><td>Soma dos lugares no pódio — quem ficou bem em várias provas, vence.</td><td>Hybrid search</td></tr>
+                            <tr><td><strong>OLTP</strong></td><td>Online Transaction Processing — muitas operações pequenas (CRUD).</td><td>Caixa do supermercado: muitas transações curtas.</td><td>PostgreSQL, MySQL</td></tr>
+                            <tr><td><strong>OLAP</strong></td><td>Online Analytical Processing — poucas queries enormes (agregações).</td><td>Relatório de fim de mês: lê milhões, escreve um número.</td><td>ClickHouse, BigQuery</td></tr>
+                            <tr><td><strong>Quorum / Majority</strong></td><td>Confirmação por mais da metade dos nós da réplica.</td><td>Votação no condomínio — só passa com maioria.</td><td>Cassandra, MongoDB</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="extras-pacelc">
+                <h2>Teorema PACELC — Indo Além do CAP</h2>
+                <p>
+                    O <strong>CAP Theorem</strong> só fala sobre o que acontece <em>durante</em> uma partição
+                    de rede. Mas, na prática, a maior parte do tempo o sistema <strong>não está particionado</strong> —
+                    e mesmo assim precisa decidir entre <strong>latência</strong> e <strong>consistência</strong>.
+                    É aí que entra o <strong>PACELC</strong>, proposto por Daniel Abadi (2010):
+                </p>
+                <div class="callout callout-info">
+                    <div class="callout-title"><i class="fa-solid fa-scale-balanced"></i> A regra completa</div>
+                    <p>
+                        <strong>P</strong>artition? Então escolha entre <strong>A</strong>vailability e
+                        <strong>C</strong>onsistency (clássico CAP).<br>
+                        <strong>E</strong>lse (sem partição), escolha entre <strong>L</strong>atency e
+                        <strong>C</strong>onsistency.
+                    </p>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Sistema</th><th>Durante partição</th><th>Sem partição</th><th>Classificação PACELC</th></tr></thead>
+                        <tbody>
+                            <tr><td>PostgreSQL (single)</td><td>N/A (não distribuído)</td><td>Prefere consistência</td><td>—</td></tr>
+                            <tr><td>MongoDB (default)</td><td>Mantém consistência (CP)</td><td>Prefere consistência</td><td><strong>PC/EC</strong></td></tr>
+                            <tr><td>Cassandra</td><td>Mantém disponibilidade (AP)</td><td>Prefere latência</td><td><strong>PA/EL</strong></td></tr>
+                            <tr><td>DynamoDB (eventual)</td><td>AP</td><td>Prefere latência</td><td><strong>PA/EL</strong></td></tr>
+                            <tr><td>DynamoDB (strong)</td><td>CP</td><td>Prefere consistência</td><td><strong>PC/EC</strong></td></tr>
+                            <tr><td>CockroachDB</td><td>CP</td><td>Prefere consistência</td><td><strong>PC/EC</strong></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout callout-tip">
+                    <div class="callout-title"><i class="fa-solid fa-lightbulb"></i> Por que importa na prática</div>
+                    <p>Quando você lê documentação de banco distribuído, atenção ao <strong>"E"</strong>: é ali
+                        que se decide se sua leitura vai retornar em 2ms (eventual, replicada local) ou em
+                        20ms (lendo quorum global). Partição é raro; latência é todo dia. O PACELC obriga
+                        o arquiteto a pensar nos dois cenários.</p>
+                </div>
+            </section>
+
+            <section id="extras-erros">
+                <h2>Erros Comuns na Escolha de Banco</h2>
+                <div class="callout callout-danger">
+                    <div class="callout-title"><i class="fa-solid fa-bug"></i> Erro #1 — Modelar Cassandra como Relacional</div>
+                    <p>Tentar normalizar dados no Cassandra (criar tabelas como se fosse PostgreSQL) é o erro mais
+                        comum. Cassandra exige <strong>query-first modeling</strong>: duplique dados, crie uma
+                        tabela para cada query. JOINs não existem.</p>
+                </div>
+                <div class="callout callout-danger">
+                    <div class="callout-title"><i class="fa-solid fa-bug"></i> Erro #2 — Elasticsearch como fonte de verdade</div>
+                    <p>ES é índice secundário. Risco de perda de dados em split-brain é real. Mantenha a fonte
+                        primária em outro banco.</p>
+                </div>
+                <div class="callout callout-danger">
+                    <div class="callout-title"><i class="fa-solid fa-bug"></i> Erro #3 — Shard key monotônica</div>
+                    <p>ObjectId/timestamp como shard key sem hashed sharding = hot shard. <strong>Sempre avalie
+                            se a chave é monotônica.</strong></p>
+                </div>
+            </section>
+
+            <section id="extras-tendencias">
+                <h2>Tendências 2026</h2>
+                <ul>
+                    <li><strong>Hybrid Search como padrão:</strong> BM25 + vetor via RRF. Weaviate, ES e Pinecone
+                        competem nesse espaço.</li>
+                    <li><strong>Serverless databases:</strong> Neon (PG), Planetscale (MySQL), DynamoDB.</li>
+                    <li><strong>DuckDB:</strong> "SQLite para analytics" — análise local em Parquet/CSV/JSON.</li>
+                    <li><strong>NewSQL em ascensão:</strong> CockroachDB, YugabyteDB — PostgreSQL wire-compatible
+                        com consistência distribuída nativa (CP).</li>
+                    <li><strong>FinOps em bancos vetoriais:</strong> Custo de transferência de dados em SaaS
+                        (Pinecone) vs self-hosted (pgvector/Qdrant) é fator de decisão crescente.</li>
+                </ul>
+            </section>
+
+        </main>
+    </div>
+
+    <button class="back-to-top" id="backToTop" title="Voltar ao topo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cypher.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js">
+    </script>
+
+    <script>
+        (function() {
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'dark',
+                themeVariables: {
+                    primaryColor: '#1a2433',
+                    primaryBorderColor: '#3b5998',
+                    primaryTextColor: '#e4e8ee',
+                    lineColor: '#4a90d9',
+                    secondaryColor: '#161c24',
+                    tertiaryColor: '#0d1117',
+                    background: '#0a0e14',
+                    mainBkg: '#141a22',
+                    nodeBorder: '#1e2938',
+                    clusterBkg: '#111820',
+                    titleColor: '#f0f3f8',
+                    edgeLabelBackground: '#141a22',
+                },
+                flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis', padding: 16 },
+            });
+
+            window.toggleSidebar = function() {
+                document.getElementById('sidebar').classList.toggle('open');
+                document.getElementById('sidebarOverlay').classList.toggle('active');
+            };
+            window.closeSidebar = function() {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('active');
+            };
+
+            window.toggleNavSection = function(titleEl) {
+                const section = titleEl.parentElement;
+                section.classList.toggle('collapsed');
+                const collapsedSections = JSON.parse(localStorage.getItem('collapsedNavSections') || '{}');
+                collapsedSections[section.id] = section.classList.contains('collapsed');
+                localStorage.setItem('collapsedNavSections', JSON.stringify(collapsedSections));
+            };
+
+            const collapsedSections = JSON.parse(localStorage.getItem('collapsedNavSections') || '{}');
+            Object.entries(collapsedSections).forEach(([id, collapsed]) => {
+                if (collapsed) { const s = document.getElementById(id); if (s) s.classList.add('collapsed'); }
+            });
+
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('[data-nav]');
+            const observer = new IntersectionObserver((entries) => {
+                let activeId = null;
+                entries.forEach(e => { if (e.isIntersecting) activeId = e.target.id; });
+                if (activeId) {
+                    navLinks.forEach(l => {
+                        l.classList.remove('active');
+                        if (l.getAttribute('href') === '#' + activeId) {
+                            l.classList.add('active');
+                            l.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                        }
+                    });
+                    const activeLink = document.querySelector(`[data-nav][href="#${activeId}"]`);
+                    const breadcrumb = document.getElementById('breadcrumb');
+                    if (activeLink) {
+                        const sectionTitle = activeLink.closest('.nav-section')?.querySelector('.nav-section-title')
+                            ?.textContent?.replace(/[\d.]+/g, '').trim() || '';
+                        const linkText = activeLink.textContent.replace(/^\s*/, '').trim();
+                        breadcrumb.innerHTML =
+                            `<a href="#intro-visao-geral">Home</a> <span class="sep">/</span> ${sectionTitle?`<a href="#${activeId}">${sectionTitle}</a> <span class="sep">/</span> `:''}<span class="current">${linkText}</span>`;
+                    }
+                }
+            }, { root: null, rootMargin: '-80px 0px -50% 0px', threshold: 0 });
+            sections.forEach(s => observer.observe(s));
+
+            const backToTopBtn = document.getElementById('backToTop');
+            window.addEventListener('scroll', () => { backToTopBtn.classList.toggle('visible', window.scrollY >
+                    600); });
+
+            const searchInput = document.getElementById('searchInput');
+            const allSections = document.querySelectorAll('section[id]');
+            const navSections = document.querySelectorAll('.nav-section');
+            let searchIndex = [];
+            allSections.forEach(s => { searchIndex.push({ id: s.id, text: s.textContent.toLowerCase(),
+                    heading: (s.querySelector('h1,h2,h3,h4')?.textContent || '').toLowerCase() }); });
+
+            searchInput.addEventListener('input', function() {
+                const q = this.value.toLowerCase().trim();
+                if (q.length < 2) {
+                    allSections.forEach(s => s.classList.remove('search-hidden'));
+                    navSections.forEach(ns => ns.style.display = '');
+                    removeHighlights();
+                    return;
+                }
+                const matched = new Set();
+                searchIndex.forEach(e => { if (e.text.includes(q) || e.heading.includes(q)) matched.add(e
+                        .id); });
+                allSections.forEach(s => s.classList.toggle('search-hidden', !matched.has(s.id)));
+                navSections.forEach(ns => {
+                    const links = ns.querySelectorAll('[data-nav]');
+                    let has = false;
+                    links.forEach(l => { if (l.getAttribute('href') && matched.has(l.getAttribute('href')
+                            .replace('#', ''))) has = true; });
+                    ns.style.display = has ? '' : 'none';
+                });
+                removeHighlights();
+                if (q.length >= 2) { navSections.forEach(ns => ns.classList.remove('collapsed'));
+                    highlightMatches(q); }
+            });
+
+            function highlightMatches(q) {
+                document.querySelectorAll('section:not(.search-hidden)').forEach(section => {
+                    const walker = document.createTreeWalker(section, NodeFilter.SHOW_TEXT, null, false);
+                    const nodes = [];
+                    while (walker.nextNode()) {
+                        if (!['SCRIPT', 'STYLE', 'CODE'].includes(walker.currentNode.parentElement.tagName) &&
+                            !walker.currentNode.parentElement.classList.contains('mermaid') &&
+                            walker.currentNode.textContent.trim().length > 0) nodes.push(walker.currentNode);
+                    }
+                    nodes.forEach(node => {
+                        const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+                        if (regex.test(node.textContent)) {
+                            const span = document.createElement('span');
+                            span.innerHTML = node.textContent.replace(regex,
+                                '<mark class="search-highlight">$1</mark>');
+                            node.parentNode.replaceChild(span, node);
+                        }
+                    });
+                });
+            }
+
+            function removeHighlights() {
+                document.querySelectorAll('.search-highlight').forEach(m => {
+                    m.parentNode?.replaceChild(document.createTextNode(m.textContent), m);
+                    m.parentNode?.normalize();
+                });
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault();
+                    searchInput.focus();
+                    searchInput.select(); }
+                if (e.key === 'Escape') { searchInput.value = '';
+                    searchInput.dispatchEvent(new Event('input'));
+                    searchInput.blur(); }
+            });
+
+            document.querySelectorAll('[data-nav]').forEach(l => { l.addEventListener('click', () => { if (window
+                        .innerWidth <= 1024) closeSidebar(); }); });
+
+            console.log('%c📚 DataArch v2.3 %c— Revisão didática',
+                'color:#5da8f0;font-size:16px;font-weight:bold;', 'color:#a371f7;');
+            console.log(
+                '%cNovidades: glossário para trainee, PACELC, custos relativos, Redis I/O multi-thread, SQLite WAL, custo de tunable consistency, anti-padrões de TSDB e vetorial, diagrama row vs column.',
+                'color:#b0b8c4;');
+        })();
+    </script>
+</body>
+</html>
