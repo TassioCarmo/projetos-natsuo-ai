@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bancos de Dados Modernos — Guia Técnico Revisado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base: #080c10;
+    --bg-card: #0d1117;
+    --bg-card-2: #111820;
+    --bg-header: #0a1520;
+    --border: #1e2d3d;
+    --border-bright: #2a4060;
+    --text-primary: #cdd9e5;
+    --text-secondary: #768a9e;
+    --text-dim: #4a5a6a;
+    --accent-cyan: #39c5cf;
+    --accent-blue: #58a6ff;
+    --accent-green: #3fb950;
+    --accent-amber: #e3b341;
+    --accent-red: #f85149;
+    --accent-violet: #bc8cff;
+    --accent-orange: #ffa657;
+    --accent-pink: #f778ba;
+    --accent-teal: #2ea89e;
+
+    --sql-color: #58a6ff;
+    --doc-color: #3fb950;
+    --kv-color: #e3b341;
+    --wide-color: #bc8cff;
+    --graph-color: #f778ba;
+    --ts-color: #39c5cf;
+    --search-color: #ffa657;
+    --vector-color: #f85149;
+    --olap-color: #2ea89e;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(30, 45, 61, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 45, 61, 0.3) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrap { position: relative; z-index: 1; }
+
+  /* ───── HERO ───── */
+  .hero {
+    padding: 80px 24px 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 300px;
+    background: radial-gradient(ellipse at center, rgba(57, 197, 207, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    border: 1px solid rgba(57, 197, 207, 0.3);
+    padding: 5px 14px;
+    border-radius: 2px;
+    margin-bottom: 24px;
+    background: rgba(57, 197, 207, 0.05);
+  }
+
+  .hero h1 {
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+
+  .hero h1 span { color: var(--accent-cyan); }
+
+  .hero-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 48px;
+  }
+
+  /* ───── FAMILY PILLS NAV ───── */
+  .family-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    max-width: 900px;
+    margin: 0 auto 64px;
+    padding: 0 16px;
+  }
+
+  .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 2px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .pill:hover { transform: translateY(-2px); filter: brightness(1.3); }
+
+  /* ───── MAIN GRID ───── */
+  .main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 16px 80px;
+  }
+
+  /* ───── FAMILY CARD ───── */
+  .family-card {
+    margin-bottom: 48px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-card);
+    overflow: hidden;
+    transition: border-color 0.3s;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .family-card:hover { border-color: var(--border-bright); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .family-card:nth-child(1)  { animation-delay: 0.05s; }
+  .family-card:nth-child(2)  { animation-delay: 0.10s; }
+  .family-card:nth-child(3)  { animation-delay: 0.15s; }
+  .family-card:nth-child(4)  { animation-delay: 0.20s; }
+  .family-card:nth-child(5)  { animation-delay: 0.25s; }
+  .family-card:nth-child(6)  { animation-delay: 0.30s; }
+  .family-card:nth-child(7)  { animation-delay: 0.35s; }
+  .family-card:nth-child(8)  { animation-delay: 0.40s; }
+  .family-card:nth-child(9)  { animation-delay: 0.45s; }
+
+  .card-header {
+    padding: 28px 32px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .card-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    border: 1px solid;
+  }
+
+  .card-header-text { flex: 1; }
+
+  .card-index {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .card-title {
+    font-size: clamp(20px, 3vw, 26px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    color: #fff;
+  }
+
+  .card-desc {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    max-width: 680px;
+    line-height: 1.5;
+  }
+
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+  }
+
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+  }
+
+  /* ── ANALOGY BOX ── */
+  .analogy-box {
+    margin: 0;
+    padding: 16px 28px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px dashed var(--border);
+  }
+
+  .analogy-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-amber);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .analogy-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  /* ── ONE LINER ── */
+  .oneliner-box {
+    margin: 0;
+    padding: 12px 28px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .oneliner-text {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .oneliner-text span {
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  /* ── card body ── */
+  .card-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+  }
+
+  @media (max-width: 900px) {
+    .card-body { grid-template-columns: 1fr; }
+  }
+
+  .card-section {
+    padding: 24px 28px;
+    border-right: 1px solid var(--border);
+  }
+
+  .card-section:last-child { border-right: none; }
+
+  @media (max-width: 900px) {
+    .card-section { border-right: none; border-bottom: 1px solid var(--border); }
+    .card-section:last-child { border-bottom: none; }
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .info-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .info-list li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.4;
+  }
+
+  .info-list li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    font-size: 10px;
+    color: var(--text-dim);
+    top: 2px;
+  }
+
+  .info-list li strong { color: var(--text-primary); font-weight: 600; }
+
+  /* ── CODE BLOCK ── */
+  .code-box {
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    overflow-x: auto;
+  }
+  .code-box .code-comment { color: var(--text-dim); }
+  .code-box .code-kw { color: var(--accent-violet); }
+  .code-box .code-str { color: var(--accent-green); }
+  .code-box .code-num { color: var(--accent-amber); }
+
+  /* ── WARNING BOX ── */
+  .warning-box {
+    margin: 0;
+    padding: 20px 28px;
+    background: rgba(248, 81, 73, 0.05);
+    border-top: 1px solid var(--border);
+  }
+
+  .warning-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-red);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .warning-header svg { flex-shrink: 0; }
+
+  .warning-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 6px 16px;
+    list-style: none;
+  }
+
+  .warning-list li {
+    font-size: 12px;
+    color: rgba(248, 81, 73, 0.75);
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.4;
+  }
+
+  .warning-list li::before {
+    content: '✕';
+    position: absolute;
+    left: 0;
+    font-size: 10px;
+    color: var(--accent-red);
+    top: 1px;
+  }
+
+  /* ── AI SECTION ── */
+  .ai-box {
+    margin: 0;
+    padding: 22px 28px;
+    background: linear-gradient(90deg, rgba(57, 197, 207, 0.06), transparent);
+    border-top: 1px solid rgba(57, 197, 207, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ai-box::before {
+    content: 'AI';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 80px;
+    font-weight: 800;
+    color: rgba(57, 197, 207, 0.04);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .ai-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ai-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+
+  .ai-chip {
+    background: rgba(57, 197, 207, 0.08);
+    border: 1px solid rgba(57, 197, 207, 0.2);
+    border-radius: 3px;
+    padding: 10px 14px;
+  }
+
+  .ai-chip-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    margin-bottom: 4px;
+  }
+
+  .ai-chip-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  /* ── PRODUCTS ROW ── */
+  .products-row {
+    padding: 16px 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .products-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-right: 4px;
+  }
+
+  .product-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+
+  .product-tag:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+  }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .stat {
+    flex: 1;
+    min-width: 120px;
+    padding: 14px 20px;
+    border-right: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .stat:last-child { border-right: none; }
+
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  /* ── TRIVIA BOX ── */
+  .trivia-box {
+    margin: 0;
+    padding: 14px 28px;
+    background: rgba(227, 179, 65, 0.04);
+    border-top: 1px solid rgba(227, 179, 65, 0.15);
+  }
+
+  .trivia-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent-amber);
+    margin-bottom: 4px;
+  }
+
+  .trivia-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  /* ───── COMPARISON TABLE ───── */
+  .section-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .section-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .section-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 16px 80px;
+  }
+
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 13px;
+  }
+
+  .compare-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .compare-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    vertical-align: middle;
+  }
+
+  .compare-table tr:last-child td { border-bottom: none; }
+
+  .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .family-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  .family-name-cell {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  .tag-acid { color: var(--accent-green); font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .tag-base { color: var(--accent-amber); font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .tag-both { color: var(--accent-violet); font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .tag-eventual { color: var(--accent-amber); font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .tag-session { color: var(--accent-orange); font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .tag-strong { color: var(--accent-green); font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+  .table-note {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ───── DECISION MAP ───── */
+  .decision-map {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 32px;
+    margin-bottom: 48px;
+  }
+
+  .decision-step {
+    margin-bottom: 24px;
+    padding-left: 24px;
+    border-left: 2px solid var(--border-bright);
+  }
+
+  .decision-step:last-child { margin-bottom: 0; }
+
+  .decision-question {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-bottom: 8px;
+  }
+
+  .decision-answers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .decision-answer {
+    font-size: 13px;
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text-secondary);
+  }
+
+  .decision-answer strong { color: var(--text-primary); }
+
+  /* ───── FOOTER ───── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  /* ───── SCROLLBAR ───── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-base); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  /* ───── RESPONSIVE ───── */
+  @media (max-width: 640px) {
+    .card-header { flex-direction: column; }
+    .card-body { grid-template-columns: 1fr; }
+    .stats-row { flex-wrap: wrap; }
+    .stat { min-width: 50%; border-right: none; border-bottom: 1px solid var(--border); }
+    .stat:nth-child(odd) { border-right: 1px solid var(--border); }
+    .compare-table { font-size: 11px; }
+    .compare-table th, .compare-table td { padding: 8px 10px; }
+    .warning-list { grid-template-columns: 1fr; }
+  }
+
+  abbr {
+    text-decoration: underline dotted;
+    cursor: help;
+  }
+</style>
+<base target="_blank">
+<base target="_blank">
+</head>
+<body>
+<div class="page-wrap">
+
+<!-- ══════════════════════════════ HERO ══════════════════════════════ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-tag">// Guia Técnico v2.0 · Maio 2026 · Revisado</div>
+  <h1>Bancos de Dados<br><span>Modernos</span></h1>
+  <p class="hero-sub">9 Famílias de Arquitetura de Dados · Para Engenheiros de Software</p>
+
+  <nav class="family-nav">
+    <a href="#sql" class="pill" style="color:var(--sql-color);border-color:rgba(88,166,255,0.3);background:rgba(88,166,255,0.05)">SQL Relacional</a>
+    <a href="#doc" class="pill" style="color:var(--doc-color);border-color:rgba(63,185,80,0.3);background:rgba(63,185,80,0.05)">Documentos</a>
+    <a href="#kv"  class="pill" style="color:var(--kv-color);border-color:rgba(227,179,65,0.3);background:rgba(227,179,65,0.05)">Key-Value</a>
+    <a href="#wc"  class="pill" style="color:var(--wide-color);border-color:rgba(188,140,255,0.3);background:rgba(188,140,255,0.05)">Wide-Column</a>
+    <a href="#gr"  class="pill" style="color:var(--graph-color);border-color:rgba(247,120,186,0.3);background:rgba(247,120,186,0.05)">Grafo</a>
+    <a href="#ts"  class="pill" style="color:var(--ts-color);border-color:rgba(57,197,207,0.3);background:rgba(57,197,207,0.05)">Time-Series</a>
+    <a href="#se"  class="pill" style="color:var(--search-color);border-color:rgba(255,166,87,0.3);background:rgba(255,166,87,0.05)">Busca</a>
+    <a href="#ve"  class="pill" style="color:var(--vector-color);border-color:rgba(248,81,73,0.3);background:rgba(248,81,73,0.05)">Vetorial</a>
+    <a href="#ol"  class="pill" style="color:var(--olap-color);border-color:rgba(46,168,158,0.3);background:rgba(46,168,158,0.05)">OLAP / Colunar</a>
+  </nav>
+</section>
+
+<!-- ══════════════════════════════ CARDS GRID ══════════════════════════════ -->
+<main class="main">
+
+  <!-- ─────────────────── 1. SQL ─────────────────── -->
+  <article id="sql" class="family-card" style="--c:var(--sql-color)">
+    <div class="card-header" style="border-top:2px solid var(--sql-color)">
+      <div class="card-icon" style="background:rgba(88,166,255,0.08);border-color:rgba(88,166,255,0.25);color:var(--sql-color)">🗃️</div>
+      <div class="card-header-text">
+        <div class="card-index">// 01 · Família</div>
+        <h2 class="card-title">Banco de Dados Relacional (SQL)</h2>
+        <p class="card-desc">Organiza dados em tabelas com linhas e colunas, relacionamentos via chaves estrangeiras, garantindo integridade por ACID e SQL padrão.</p>
+        <div class="badge-row">
+          <span class="badge">ACID</span><span class="badge">Schema rígido</span><span class="badge">Escala Vertical</span><span class="badge">B-trees</span><span class="badge">WAL</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-label">💡 Analogia em 30 segundos</div>
+      <div class="analogy-text">Imagine uma planilha de Excel rigorosamente auditada: cada aba (tabela) tem colunas predefinidas, fórmulas (constraints) que impedem erros, e uma log de alterações (WAL) que garante que nada se perde se o computador desligar no meio da edição.</div>
+    </div>
+
+    <div class="oneliner-box">
+      <div class="oneliner-text">A decisão de arquitetura: <span>você aceita perder a flexibilidade de schema para ganhar a garantia de que seu dinheiro não será debitado duas vezes?</span></div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+        <div class="section-label" style="color:var(--sql-color)">Como funciona</div>
+        <ul class="info-list">
+          <li><strong>Armazenamento:</strong> B-trees para índices + heaps em páginas. Tamanhos variam por engine: PostgreSQL 8KB (padrão), MySQL InnoDB 16KB, SQLite 4KB (padrão do sistema de arquivos)</li>
+          <li><strong>Consistência:</strong> <abbr title="Atomicity, Consistency, Isolation, Durability — garantias transacionais que asseguram que operações se completam totalmente ou não acontecem">ACID</abbr> nativo. <abbr title="Write-Ahead Log: registra alterações em disco antes de confirmar a transação, garantindo durabilidade">WAL</abbr> garante durabilidade antes de confirmar; <abbr title="Multi-Version Concurrency Control: mantém múltiplas versões de uma linha para permitir leituras sem bloquear escritas">MVCC</abbr> permite leituras consistentes sem bloquear escritas</li>
+          <li><strong>Distribuição:</strong> Single-node nativo; sharding manual ou via Vitess/Citus. Replicação assíncrona (streaming) é padrão; síncrona só em clusters ativos com trade-off de latência</li>
+          <li><strong>Consulta:</strong> Query planner otimiza joins e índices; custo é proporcional à cardinalidade e selectividade</li>
+          <li><strong>Schema:</strong> Rígido por design. ALTER TABLE pode bloquear tabelas grandes em engines antigas; online DDL é feature recente e não universal</li>
+        </ul>
+        <div class="code-box">
+<span class="code-comment">-- Exemplo: schema relacional com FK e índice</span><br>
+<span class="code-kw">CREATE TABLE</span> pedidos (<br>
+&nbsp;&nbsp;id <span class="code-kw">SERIAL PRIMARY KEY</span>,<br>
+&nbsp;&nbsp;cliente_id <span class="code-kw">INT REFERENCES</span> clientes(id),<br>
+&nbsp;&nbsp;total <span class="code-kw">DECIMAL</span>(10,2),<br>
+&nbsp;&nbsp;criado_em <span class="code-kw">TIMESTAMP DEFAULT</span> <span class="code-kw">NOW</span>()<br>
+);<br>
+<span class="code-kw">CREATE INDEX</span> idx_cliente <span class="code-kw">ON</span> pedidos(cliente_id);
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--sql-color)">Casos de uso reais</div>
+        <ul class="info-list">
+          <li><strong>E-commerce:</strong> Inventário e pedidos com consistência transacional (evita oversell em flash sales)</li>
+          <li><strong>Sistemas financeiros:</strong> Auditoria, compliance SOX/PCI, movimentações atômicas entre contas</li>
+          <li><strong>CRM/ERP:</strong> Relacionamentos complexos entre clientes, oportunidades e histórico de interações</li>
+          <li><strong>Payroll/HR:</strong> Integridade referencial entre folha, benefícios e contabilidade</li>
+          <li><strong>SQLite embarcado:</strong> Apps mobile/desktop offline-first com zero configuração de servidor</li>
+        </ul>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--sql-color)">Características</div>
+        <ul class="info-list">
+          <li><strong>Latência:</strong> Tipicamente milissegundos para queries indexadas; latência sobe com lock contention em writes concorrentes ou joins mal otimizados</li>
+          <li><strong>Throughput:</strong> Limitado pela capacidade do nó único; sharding adiciona complexidade de joins cross-shard e consistência distribuída</li>
+          <li><strong>Linguagem:</strong> SQL ANSI + DDL/DML/DCL; stored procedures opcionais (PostgreSQL PL/pgSQL, SQL Server T-SQL)</li>
+          <li><strong>ORMs:</strong> Hibernate, SQLAlchemy, Prisma — cuidado com queries N+1 em lazy loading, que destroem performance em produção</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Quando Evitar
+      </div>
+      <ul class="warning-list">
+        <li>Dados altamente desnormalizados (deep object graphs) — N+1 em ORM é difícil de otimizar sem redesign</li>
+        <li>Escalabilidade horizontal necessária como primeiro requisito — sharding manual é complexo e quebra joins cross-shard</li>
+        <li>Dados não-estruturados binários grandes — imagens, vídeos, logs brutos (use object store S3/MinIO)</li>
+        <li>Latência crítica com replicação síncrona entre regiões — WAL sync entre nós é bottleneck de rede</li>
+        <li>Padrões de acesso imprevisíveis com schema em constante mutação — ALTER TABLE em tabelas grandes pode travar</li>
+      </ul>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Casos de Uso com IA
+      </div>
+      <div class="ai-grid">
+        <div class="ai-chip"><div class="ai-chip-label">RAG</div><div class="ai-chip-text">pgvector em PostgreSQL para similarity queries; JSONB armazena metadados de chunks com índices GIN</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Agentes</div><div class="ai-chip-text">Source of truth transacional para state persistente; SQL para multi-hop reasoning via joins estruturados</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">ML Pipelines</div><div class="ai-chip-text">Feature stores (Tecton, Feast) usam SQL para data slicing, treino supervisionado e versionamento de features</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Observabilidade</div><div class="ai-chip-text">Logging estruturado em tabelas; queries históricas para debug de drift de modelo e comparação de versões</div></div>
+      </div>
+    </div>
+
+    <div class="trivia-box">
+      <div class="trivia-label">📌 O que ninguém te conta</div>
+      <div class="trivia-text">O SQLite está presente em aproximadamente <strong>um trilhão de dispositivos</strong> — todo smartphone Android, iPhone, navegador Chrome/Firefox, e até smart TVs o usam internamente. É provavelmente o banco de dados mais implantado do mundo, e quase invisível.</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Consistência</div><div class="stat-value tag-acid">ACID</div></div>
+      <div class="stat"><div class="stat-label">Escala</div><div class="stat-value" style="color:var(--text-secondary)">Vertical</div></div>
+      <div class="stat"><div class="stat-label">Latência</div><div class="stat-value" style="color:var(--sql-color)">P50 ms</div></div>
+      <div class="stat"><div class="stat-label">Use Case</div><div class="stat-value" style="color:var(--text-secondary);font-size:11px">Transações complexas</div></div>
+    </div>
+    <div class="products-row">
+      <span class="products-label">Produtos</span>
+      <span class="product-tag">PostgreSQL</span><span class="product-tag">MySQL / MariaDB</span><span class="product-tag">Oracle</span><span class="product-tag">SQL Server</span><span class="product-tag">SQLite</span>
+    </div>
+  </article>
+
+  <!-- ─────────────────── 2. Documentos ─────────────────── -->
+  <article id="doc" class="family-card" style="--c:var(--doc-color)">
+    <div class="card-header" style="border-top:2px solid var(--doc-color)">
+      <div class="card-icon" style="background:rgba(63,185,80,0.08);border-color:rgba(63,185,80,0.25);color:var(--doc-color)">📄</div>
+      <div class="card-header-text">
+        <div class="card-index">// 02 · Família</div>
+        <h2 class="card-title">Banco de Dados de Documentos</h2>
+        <p class="card-desc">Armazena dados como documentos JSON/BSON semi-estruturados. Schema flexível, evolução sem migration, ideal para objetos aninhados e iteração rápida.</p>
+        <div class="badge-row">
+          <span class="badge">BASE</span><span class="badge">Schema Flexível</span><span class="badge">Sharding nativo</span><span class="badge">BSON</span><span class="badge">Replica sets</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-label">💡 Analogia em 30 segundos</div>
+      <div class="analogy-text">É como uma pasta de arquivos onde cada documento pode ter seu próprio formato: um currículo tem "experiências", outro tem "projetos open source". Não precisa reimprimir toda a pasta porque alguém inventou um novo campo.</div>
+    </div>
+
+    <div class="oneliner-box">
+      <div class="oneliner-text">A decisão de arquitetura: <span>você precisa iterar no schema mais rápido do que o time consegue fazer migrations de banco?</span></div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+        <div class="section-label" style="color:var(--doc-color)">Como funciona</div>
+        <ul class="info-list">
+          <li><strong>Armazenamento:</strong> BSON em WiredTiger (MongoDB) — engine moderna com B-trees, copy-on-page e compressão; Couchbase usa B-trees com cache integrado (managed cache); Firestore é serverless com replicação multi-região automática</li>
+          <li><strong>Indexação:</strong> Em qualquer campo ou campo aninhado; índices compostos e de array para agregações. MongoDB: índices B-tree; Couchbase: GSI (Global Secondary Indexes)</li>
+          <li><strong>Distribuição:</strong> Sharding via shard key (MongoDB); replica sets automáticos. Couchbase usa XDCR (cross-datacenter replication). Firestore abstrai completamente a infraestrutura</li>
+          <li><strong>Consistência:</strong> <abbr title="Basically Available, Soft state, Eventual consistency — modelo de consistência relaxado comum em sistemas distribuídos">BASE</abbr> por padrão. MongoDB permite tuning via writeConcern/readConcern; Firestore oferece strong consistency por documento</li>
+          <li><strong>Transações:</strong> MongoDB 4.0+ suporta ACID multi-documento em replica sets; 4.2+ em shards. Couchbase oferece ACID em escopo de bucket desde a versão 6.5</li>
+        </ul>
+        <div class="code-box">
+<span class="code-comment">// Exemplo: documento JSON aninhado (MongoDB)</span><br>
+{<br>
+&nbsp;&nbsp;<span class="code-str">"_id"</span>: ObjectId(<span class="code-str">"..."</span>),<br>
+&nbsp;&nbsp;<span class="code-str">"usuario"</span>: <span class="code-str">"ana"</span>,<br>
+&nbsp;&nbsp;<span class="code-str">"endereco"</span>: { <span class="code-str">"cidade"</span>: <span class="code-str">"SP"</span>, <span class="code-str">"uf"</span>: <span class="code-str">"SP"</span> },<br>
+&nbsp;&nbsp;<span class="code-str">"tags"</span>: [<span class="code-str">"premium"</span>, <span class="code-str">"mobile"</span>]<br>
+}
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--doc-color)">Casos de uso reais</div>
+        <ul class="info-list">
+          <li><strong>CMS:</strong> Posts com nested comments e estrutura mutável sem migration scripts; WordPress moderno usa MySQL, mas headless CMS (Strapi, Sanity) frequentemente usam documentos</li>
+          <li><strong>Mobile offline-first:</strong> Couchbase Sync Gateway replica local/remoto com resolução de conflitos automática</li>
+          <li><strong>IoT:</strong> Sensores variáveis sem schema rígido — novos atributos (firmware, localização) são absorvidos automaticamente</li>
+          <li><strong>Startups em MVP:</strong> Iteração rápida sem ALTER TABLE; campos opcionais não geram colunas NULL</li>
+          <li><strong>User profiles:</strong> Atributos diversos (preferências, consentimentos LGPD) sem dezenas de colunas NULL em tabela relacional</li>
+        </ul>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--doc-color)">Características</div>
+        <ul class="info-list">
+          <li><strong>Latência:</strong> Tipicamente milissegundos; lookups aninhados podem exigir múltiplas queries se não indexados (evite deep nesting sem necessidade)</li>
+          <li><strong>Throughput:</strong> Alto em write-heavy com sharding bem configurado — a escolha da shard key é a decisão arquitetural mais crítica</li>
+          <li><strong>Linguagem:</strong> JSON-based query; aggregation pipeline (MongoDB); N1QL/SQL++ (Couchbase); queries simples (Firestore)</li>
+          <li><strong>ODMs:</strong> Mongoose (Node), Pydantic ODM (Python), Couchbase SDK. Cuidado com ODMs que mascaram a ausência de joins eficientes</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Quando Evitar
+      </div>
+      <ul class="warning-list">
+        <li>Integridade referencial complexa — sem constraints de FK nativas; validação deve ser feita na aplicação ou via schema validation</li>
+        <li>Transações multi-documento simples e frequentes — SQL ACID nativo é mais direto, maduro e debugável</li>
+        <li>Dados altamente estruturados e homogêneos — SQL schema é mais eficiente em storage e cache locality</li>
+        <li>Consultas analíticas complexas com agregações cross-collection — exporte para data warehouse (OLAP)</li>
+        <li>Relacionamentos muitos-muitos intrincados — SQL JOINs com índices cobertos são mais eficientes</li>
+      </ul>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Casos de Uso com IA
+      </div>
+      <div class="ai-grid">
+        <div class="ai-chip"><div class="ai-chip-label">RAG</div><div class="ai-chip-text">Chunks de texto com embedding em array denso; query por similarity combinada com filtros de metadata em documentos</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Agentes</div><div class="ai-chip-text">Logs de ações em documentos flexíveis; context retrieval via aggregation pipelines com $lookup</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">ML Pipelines</div><div class="ai-chip-text">Feature stores com schema evolution simples; LanceDB compatível com BSON para embeddings multimodais</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Observabilidade</div><div class="ai-chip-text">Structured logging em documentos; field flattening para análise downstream em data lake</div></div>
+      </div>
+    </div>
+
+    <div class="trivia-box">
+      <div class="trivia-label">📌 O que ninguém te conta</div>
+      <div class="trivia-text">O MongoDB nasceu como um componente interno de uma plataforma de cloud computing (10gen) em 2007. A empresa quase falhou porque ninguém queria a plataforma, mas todos queriam o banco de dados. Viraram empresa de banco de dados por acaso.</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Consistência</div><div class="stat-value tag-base">BASE</div></div>
+      <div class="stat"><div class="stat-label">Escala</div><div class="stat-value" style="color:var(--text-secondary)">Horizontal</div></div>
+      <div class="stat"><div class="stat-label">Latência</div><div class="stat-value" style="color:var(--doc-color)">P50 ms</div></div>
+      <div class="stat"><div class="stat-label">Use Case</div><div class="stat-value" style="color:var(--text-secondary);font-size:11px">Dados flexíveis</div></div>
+    </div>
+    <div class="products-row">
+      <span class="products-label">Produtos</span>
+      <span class="product-tag">MongoDB</span><span class="product-tag">Couchbase</span><span class="product-tag">Firestore</span><span class="product-tag">ArangoDB</span>
+    </div>
+  </article>
+
+  <!-- ─────────────────── 3. Key-Value ─────────────────── -->
+  <article id="kv" class="family-card">
+    <div class="card-header" style="border-top:2px solid var(--kv-color)">
+      <div class="card-icon" style="background:rgba(227,179,65,0.08);border-color:rgba(227,179,65,0.25);color:var(--kv-color)">⚡</div>
+      <div class="card-header-text">
+        <div class="card-index">// 03 · Família</div>
+        <h2 class="card-title">Banco de Dados Key-Value</h2>
+        <p class="card-desc">Modelo mais simples: chave → valor. Acesso O(1) por hash table. In-memory com latência sub-ms. Ideal para caching, sessions e state efêmero.</p>
+        <div class="badge-row">
+          <span class="badge">In-Memory</span><span class="badge">Sub-ms</span><span class="badge">Hash O(1)</span><span class="badge">Pub/Sub</span><span class="badge">Sorted Sets</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-label">💡 Analogia em 30 segundos</div>
+      <div class="analogy-text">É como um armário de correio: você sabe o número da gaveta (chave), abre e pega o envelope instantaneamente. Não consegue procurar por "cartas com selo azul" — só sabe se abrir uma por uma.</div>
+    </div>
+
+    <div class="oneliner-box">
+      <div class="oneliner-text">A decisão de arquitetura: <span>você precisa de velocidade absoluta para dados que podem ser reconstruídos se o servidor reiniciar?</span></div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+        <div class="section-label" style="color:var(--kv-color)">Como funciona</div>
+        <ul class="info-list">
+          <li><strong>Armazenamento:</strong> In-memory (Redis) ou disk-backed (RocksDB/LevelDB com LSM trees). Redis usa estruturas de dados em memória; DynamoDB usa LSM em SSD com replicação multi-AZ</li>
+          <li><strong>Lookup:</strong> Hash tables O(1) por chave exata; sem índices secundários nativos (exceto DynamoDB que oferece GSI/LSI, mas com custo de write duplicado)</li>
+          <li><strong>Durabilidade:</strong> Redis usa AOF (append-only file) e RDB snapshots; trade-off velocidade vs segurança. Memcached é puro cache sem persistência</li>
+          <li><strong>Distribuição:</strong> Consistent hashing; Redis Cluster com 16384 slots. DynamoDB é fully managed e abstrai sharding</li>
+          <li><strong>Consistência:</strong> Single-node (Redis): forte (operações atômicas). Cluster: eventual com replicação assíncrona. DynamoDB oferece strong ou eventual por request</li>
+        </ul>
+        <div class="code-box">
+<span class="code-comment"># Exemplo: Redis CLI — atomic counter + TTL</span><br>
+<span class="code-kw">INCR</span> rate_limit:ip:192.168.1.1<br>
+<span class="code-kw">EXPIRE</span> rate_limit:ip:192.168.1.1 <span class="code-num">60</span><br>
+<span class="code-kw">ZADD</span> leaderboard <span class="code-num">1500</span> <span class="code-str">"player_ana"</span>
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--kv-color)">Casos de uso reais</div>
+        <ul class="info-list">
+          <li><strong>Session cache:</strong> Web apps com failover gracioso (TTL automático expira sessions inativas)</li>
+          <li><strong>Rate limiting:</strong> INCR atômico por IP sem race conditions; janela deslizante via sorted sets</li>
+          <li><strong>Leaderboards:</strong> Sorted sets (Redis) para rankings em tempo real em jogos e gamificação</li>
+          <li><strong>Pub/Sub:</strong> Redis Streams como event queue simples entre microserviços (não substitui Kafka para durabilidade)</li>
+          <li><strong>Job queues:</strong> Resque / Sidekiq / Bull para worker coordination com retry e dead letter</li>
+        </ul>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--kv-color)">Características</div>
+        <ul class="info-list">
+          <li><strong>Latência:</strong> Sub-ms in-memory (Redis); 10-100× mais lento em disco (RocksDB). Network é frequentemente o bottleneck real, não o banco</li>
+          <li><strong>Throughput:</strong> 100k+ req/s single thread Redis; network bandwidth é o limite antes do CPU</li>
+          <li><strong>Linguagem:</strong> RESP protocol; GET/SET/INCR/LPUSH/SADD + Lua scripting para operações atômicas complexas</li>
+          <li><strong>HA:</strong> Redis Sentinel (failover automático) + RDB/AOF; Redis Cluster para sharding manual</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Quando Evitar
+      </div>
+      <ul class="warning-list">
+        <li>Consultas por conteúdo — sem filtros, JOINs ou agregações nativas (exceto DynamoDB que é híbrido)</li>
+        <li>Persistência crítica — in-memory tem risco de perda em crash antes de snapshot/AOF fsync</li>
+        <li>Transações complexas multi-key — Redis MULTI/EXEC é limitado; sem rollback automático em falha parcial</li>
+        <li>Dados maiores que RAM — spill para disco fragmenta performance ou exige cluster com complexidade operacional</li>
+        <li>Acesso sequencial ao dataset — SCAN/KEYS é O(n) e pode bloquear event loop no Redis single-threaded</li>
+      </ul>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Casos de Uso com IA
+      </div>
+      <div class="ai-grid">
+        <div class="ai-chip"><div class="ai-chip-label">RAG</div><div class="ai-chip-text">Cache de embeddings já processados para evitar recomputação em chamadas repetidas (memoization de embeddings)</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Agentes</div><div class="ai-chip-text">Session state de conversas; LLM context armazenado em Redis com TTL automático para evitar vazamento de memória</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">ML Pipelines</div><div class="ai-chip-text">Feature caching, embedding cache, versionamento de model artifacts em chaves versionadas</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Observabilidade</div><div class="ai-chip-text">Contadores de métricas e cálculos de rate em memória; RedisTimeSeries para downsampling de métricas de GPU</div></div>
+      </div>
+    </div>
+
+    <div class="trivia-box">
+      <div class="trivia-label">📌 O que ninguém te conta</div>
+      <div class="trivia-text">O Redis foi criado por Salvatore Sanfilippo em 2009 para resolver um problema específico de estatísticas em tempo real de um portal italiano. O nome significa <strong>RE</strong>mote <strong>DI</strong>ctionary <strong>S</strong>erver. Ele quase o chamou de "LLOOGG" (o nome do portal).</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Consistência</div><div class="stat-value tag-both">ACID/Evt</div></div>
+      <div class="stat"><div class="stat-label">Escala</div><div class="stat-value" style="color:var(--text-secondary)">Horizontal</div></div>
+      <div class="stat"><div class="stat-label">Latência</div><div class="stat-value" style="color:var(--kv-color)">Sub-ms</div></div>
+      <div class="stat"><div class="stat-label">Use Case</div><div class="stat-value" style="color:var(--text-secondary);font-size:11px">Cache e sessions</div></div>
+    </div>
+    <div class="products-row">
+      <span class="products-label">Produtos</span>
+      <span class="product-tag">Redis</span><span class="product-tag">Memcached</span><span class="product-tag">DynamoDB</span><span class="product-tag">Tarantool</span><span class="product-tag">Dragonfly</span>
+    </div>
+  </article>
+
+  <!-- ─────────────────── 4. Wide-Column ─────────────────── -->
+  <article id="wc" class="family-card">
+    <div class="card-header" style="border-top:2px solid var(--wide-color)">
+      <div class="card-icon" style="background:rgba(188,140,255,0.08);border-color:rgba(188,140,255,0.25);color:var(--wide-color)">📊</div>
+      <div class="card-header-text">
+        <div class="card-index">// 04 · Família</div>
+        <h2 class="card-title">Wide-Column (Column-Family)</h2>
+        <p class="card-desc">Híbrido entre tabela relacional e key-value. Famílias de colunas por row com timestamp por célula. LSM trees para writes massivos e scale horizontal automático.</p>
+        <div class="badge-row">
+          <span class="badge">LSM Trees</span><span class="badge">Column Families</span><span class="badge">Tunable quorum</span><span class="badge">Timestamps</span><span class="badge">Compaction</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-label">💡 Analogia em 30 segundos</div>
+      <div class="analogy-text">É como um arquivo de cartas organizado por remetente e data: todas as cartas de "João" ficam juntas, ordenadas por data. Você nunca altera uma carta antiga — só acrescenta uma nova versão no topo, e o arquivoiro (compaction) remove duplicatas nos fins de semana.</div>
+    </div>
+
+    <div class="oneliner-box">
+      <div class="oneliner-text">A decisão de arquitetura: <span>você precisa escrever milhões de registros por dia e nunca atualizar o passado?</span></div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+        <div class="section-label" style="color:var(--wide-color)">Como funciona</div>
+        <ul class="info-list">
+          <li><strong>Modelo:</strong> rowKey → {column families} → {columns} → {values, timestamps}. Cada célula é versionada por tempo</li>
+          <li><strong>Armazenamento:</strong> LSM trees (append-only SSTables); compaction em background libera espaço e remove versões antigas</li>
+          <li><strong>Indexação:</strong> Row key é índice primário; índices secundários são limitados ou via Solr/Elasticsearch externos</li>
+          <li><strong>Distribuição:</strong> Sharding automático de row keys via range/hash; tablets/regions distribuídos entre nós</li>
+          <li><strong>Consistência:</strong> Eventual em Cassandra (quorum configurável: ONE, QUORUM, ALL); HBase oferece strong consistency por linha via ZooKeeper coordination</li>
+        </ul>
+        <div class="code-box">
+<span class="code-comment">-- Exemplo: CQL Cassandra — row key + clustering column</span><br>
+<span class="code-kw">CREATE TABLE</span> sensor_data (<br>
+&nbsp;&nbsp;sensor_id <span class="code-kw">TEXT</span>,<br>
+&nbsp;&nbsp;event_time <span class="code-kw">TIMESTAMP</span>,<br>
+&nbsp;&nbsp;temperatura <span class="code-kw">DOUBLE</span>,<br>
+&nbsp;&nbsp;<span class="code-kw">PRIMARY KEY</span> (sensor_id, event_time)<br>
+) <span class="code-kw">WITH CLUSTERING ORDER BY</span> (event_time <span class="code-kw">DESC</span>);
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--wide-color)">Casos de uso reais</div>
+        <ul class="info-list">
+          <li><strong>Time-series pesada:</strong> Milhões de pontos/dia com row key = sensor + timestamp bucket (ex: dia)</li>
+          <li><strong>Histórico de mudanças:</strong> Versionamento nativo por timestamp de célula (HBase); audit trail automático</li>
+          <li><strong>Logs em escala:</strong> Terabytes com chaveamento por tipo e período; scan eficiente por range</li>
+          <li><strong>Recomendações:</strong> Item-user matrix; scanning por usuário muito rápido com row key designado para acesso pattern</li>
+          <li><strong>Event datalake:</strong> Logs particionados por data; TTL automático para retenção compliance (GDPR/LGPD)</li>
+        </ul>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--wide-color)">Características</div>
+        <ul class="info-list">
+          <li><strong>Latência:</strong> 10-50ms dependendo do quorum e estado do compaction; leituras pós-compaction são mais rápidas</li>
+          <li><strong>Throughput:</strong> Muito alto em write-optimized; terabytes/dia comuns em produção (Netflix, Apple usam Cassandra)</li>
+          <li><strong>Linguagem:</strong> CQL (Cassandra, similar a SQL); Java API (HBase); Hive/Spark SQL layers para analytics</li>
+          <li><strong>Tolerância:</strong> Perda de N-1 nós com fator de replicação N (Cassandra); HBase depende do HDFS subjacente</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Quando Evitar
+      </div>
+      <ul class="warning-list">
+        <li>Transações multi-row — sem ACID cross-row nativo; aplicação deve coordenar via Saga ou compensação</li>
+        <li>Consultas ad-hoc complexas — requer pré-agregação ou export para Spark; não é para BI exploratório</li>
+        <li>JOINs — não existem nativamente; denormalizar causa duplicação de dados e complexidade de consistência</li>
+        <li>Mudanças frequentes de schema — adicionar column family é pesado e pode requerer rebuild de clusters</li>
+        <li>Dados abaixo de 100GB — overhead de sistema distribuído (gossip, repair, compaction) não se justifica; use PostgreSQL</li>
+      </ul>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Casos de Uso com IA
+      </div>
+      <div class="ai-grid">
+        <div class="ai-chip"><div class="ai-chip-label">RAG</div><div class="ai-chip-text">Event logs em wide-column; retrieval via row scan com timestamps ordenados para reconstruir contexto temporal</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Agentes</div><div class="ai-chip-text">Interaction history eficiente; scan user interactions por time window para contexto de conversa longa</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">ML Pipelines</div><div class="ai-chip-text">Feature store backend (Feast usa Cassandra/HBase) com valores históricos por timestamp para point-in-time joins</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Observabilidade</div><div class="ai-chip-text">Métricas time-series em wide-column; scan de janelas para alerting em tempo real e análise de padrões</div></div>
+      </div>
+    </div>
+
+    <div class="trivia-box">
+      <div class="trivia-label">📌 O que ninguém te conta</div>
+      <div class="trivia-text">O Cassandra foi criado no Facebook em 2008 para resolver a busca de inbox. O nome vem da mitológica Cassandra, que profetizava o futuro mas ninguém acreditava. A piada interna: "Cassandra é ótima para prever o que você quer, mas ninguém acredita que escala tanto."</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Consistência</div><div class="stat-value tag-base">BASE</div></div>
+      <div class="stat"><div class="stat-label">Escala</div><div class="stat-value" style="color:var(--text-secondary)">Horizontal</div></div>
+      <div class="stat"><div class="stat-label">Latência</div><div class="stat-value" style="color:var(--wide-color)">10-50ms</div></div>
+      <div class="stat"><div class="stat-label">Use Case</div><div class="stat-value" style="color:var(--text-secondary);font-size:11px">Time-series massivo</div></div>
+    </div>
+    <div class="products-row">
+      <span class="products-label">Produtos</span>
+      <span class="product-tag">Apache Cassandra</span><span class="product-tag">ScyllaDB</span><span class="product-tag">HBase</span><span class="product-tag">Bigtable</span>
+    </div>
+  </article>
+
+  <!-- ─────────────────── 5. Grafo ─────────────────── -->
+  <article id="gr" class="family-card">
+    <div class="card-header" style="border-top:2px solid var(--graph-color)">
+      <div class="card-icon" style="background:rgba(247,120,186,0.08);border-color:rgba(247,120,186,0.25);color:var(--graph-color)">🕸️</div>
+      <div class="card-header-text">
+        <div class="card-index">// 05 · Família</div>
+        <h2 class="card-title">Banco de Dados em Grafo</h2>
+        <p class="card-desc">Otimizado para relacionamentos. Nós (entidades) + arestas (relacionamentos com propriedades). Acesso via traversal, não JOINs. Ideal para redes, fraude e recomendações.</p>
+        <div class="badge-row">
+          <span class="badge">Cypher / Gremlin</span><span class="badge">ACID single-node</span><span class="badge">Traversal</span><span class="badge">Adjacency lists</span><span class="badge">Graph algorithms</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-label">💡 Analogia em 30 segundos</div>
+      <div class="analogy-text">É como um mapa de metrô: as estações são os dados (nós) e os trilhos são os relacionamentos (arestas). Perguntar "quais amigos Ana tem em comum com Bruno" é como traçar rotas — o grafo já sabe os caminhos, não precisa consultar um índice externo.</div>
+    </div>
+
+    <div class="oneliner-box">
+      <div class="oneliner-text">A decisão de arquitetura: <span>seu problema é sobre quem está conectado a quem, e não sobre o que cada um tem em seu armário?</span></div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+        <div class="section-label" style="color:var(--graph-color)">Como funciona</div>
+        <ul class="info-list">
+          <li><strong>Modelo:</strong> Nodes {properties} + Edges {type, properties}; labeled property graph (Neo4j, ArangoDB) ou RDF triplets {subject, predicate, object}</li>
+          <li><strong>Armazenamento:</strong> Adjacency lists ou triplets; <strong>index-free adjacency</strong> em Neo4j — cada nó aponta diretamente para seus vizinhos em disco</li>
+          <li><strong>Indexação:</strong> Índices em propriedades de nós + índices de aresta para acesso rápido por tipo de relacionamento</li>
+          <li><strong>Distribuição:</strong> Particionamento vertex-cut/edge-cut; replicação cross-partition é custosa. Distribuição de grafos ainda é problema ativo de pesquisa</li>
+          <li><strong>Consistência:</strong> ACID em single-machine (Neo4j); eventual em distribuído (JanusGraph). ArangoDB oferece cluster com consistency configurável</li>
+        </ul>
+        <div class="code-box">
+<span class="code-comment">// Exemplo: Cypher — amigos de amigos (2 hops)</span><br>
+<span class="code-kw">MATCH</span> (ana:User {nome: <span class="code-str">"Ana"</span>})<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;()-[:AMIGO*1..2]->(sugestao)<br>
+<span class="code-kw">RETURN</span> sugestao.nome, <span class="code-kw">COUNT</span>(*) <span class="code-kw">AS</span> peso<br>
+<span class="code-kw">ORDER BY</span> peso <span class="code-kw">DESC</span>
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--graph-color)">Casos de uso reais</div>
+        <ul class="info-list">
+          <li><strong>Redes sociais:</strong> Mutual friends, recomendações via conexões comuns (2-3 hops). LinkedIn usa grafos para "pessoas que você talvez conheça"</li>
+          <li><strong>Recomendações:</strong> Co-purchases, embeddings de usuário → items via caminhos no grafo (Amazon, Netflix)</li>
+          <li><strong>Org-chart / Knowledge:</strong> Wikipedia links, hierarquias de empresa, taxonomias médicas (SNOMED CT)</li>
+          <li><strong>Detecção de fraude:</strong> Padrões anormais em subgrafos de transações (ciclos, mules, layering)</li>
+          <li><strong>Identity resolution:</strong> Merge de registros duplicados via relacionamentos probabilísticos (ex: mesmo CPF, email similar, endereço próximo)</li>
+        </ul>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--graph-color)">Características</div>
+        <ul class="info-list">
+          <li><strong>Latência:</strong> Sub-ms para consultas locais (1-2 hops); traversals longos (>5 hops) são custosos O(n^k)</li>
+          <li><strong>Throughput:</strong> Variável; path finding é operação intensiva. Neo4j recomenda read replicas para offload de queries analíticas</li>
+          <li><strong>Linguagem:</strong> Cypher (Neo4j), Gremlin (Apache TinkerPop), SPARQL (RDF/semantic web)</li>
+          <li><strong>HA:</strong> Neo4j causal clustering; read replicas para queries; write em single master</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Quando Evitar
+      </div>
+      <ul class="warning-list">
+        <li>Dados sem relacionamentos significativos — tabular puro é mais eficiente em storage e cache</li>
+        <li>Consultas apenas por atributo — SQL é mais simples sem overhead de graph engine e traversal planning</li>
+        <li>Escala massiva (bilhões de arestas) — sharding de grafo ainda é imaturo; considere precomputação de caminhos</li>
+        <li>Atualizações de alta frequência — lock contention em traversals e índices de aresta é difícil de otimizar</li>
+        <li>Analytics batch massivo — use Spark GraphX ou Giraph para computação offline em escala</li>
+      </ul>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Casos de Uso com IA
+      </div>
+      <div class="ai-grid">
+        <div class="ai-chip"><div class="ai-chip-label">RAG</div><div class="ai-chip-text">Knowledge graphs conectam conceitos; expansão via graph hops e entity linking para enriquecer contexto do LLM</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Agentes</div><div class="ai-chip-text">State machines como grafos de transições; raciocínio multi-hop em planejamento de ações sequenciais</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">ML Pipelines</div><div class="ai-chip-text">Graph Neural Networks (GNN) treinados em estrutura de grafo (PyTorch Geometric, DGL)</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Observabilidade</div><div class="ai-chip-text">Trace causality em distributed systems; propagação de erros via edges para root cause analysis</div></div>
+      </div>
+    </div>
+
+    <div class="trivia-box">
+      <div class="trivia-label">📌 O que ninguém te conta</div>
+      <div class="trivia-text">O algoritmo de "pessoas que você talvez conheça" do LinkedIn originalmente rodava em Hadoop batch e demorava <strong>horas</strong>. Quando migraram para grafo em tempo real, a latência caiu para milissegundos e a aceitação de conexões aumentou 30%.</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Consistência</div><div class="stat-value tag-both">ACID/Evt</div></div>
+      <div class="stat"><div class="stat-label">Escala</div><div class="stat-value" style="color:var(--text-secondary)">Complexo</div></div>
+      <div class="stat"><div class="stat-label">Latência</div><div class="stat-value" style="color:var(--graph-color)">ms</div></div>
+      <div class="stat"><div class="stat-label">Use Case</div><div class="stat-value" style="color:var(--text-secondary);font-size:11px">Relacionamentos</div></div>
+    </div>
+    <div class="products-row">
+      <span class="products-label">Produtos</span>
+      <span class="product-tag">Neo4j</span><span class="product-tag">ArangoDB</span><span class="product-tag">TigerGraph</span><span class="product-tag">JanusGraph</span><span class="product-tag">Amazon Neptune</span>
+    </div>
+  </article>
+
+  <!-- ─────────────────── 6. Time-Series ─────────────────── -->
+  <article id="ts" class="family-card">
+    <div class="card-header" style="border-top:2px solid var(--ts-color)">
+      <div class="card-icon" style="background:rgba(57,197,207,0.08);border-color:rgba(57,197,207,0.25);color:var(--ts-color)">📈</div>
+      <div class="card-header-text">
+        <div class="card-index">// 06 · Família</div>
+        <h2 class="card-title">Banco de Dados Time-Series</h2>
+        <p class="card-desc">Otimizado para dados sequenciais com timestamp. Append-only com compressão delta encoding, rollups automáticos, tiering por temperatura dos dados.</p>
+        <div class="badge-row">
+          <span class="badge">Append-only</span><span class="badge">Delta encoding</span><span class="badge">Rollups</span><span class="badge">Tiering</span><span class="badge">PromQL / InfluxQL</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-label">💡 Analogia em 30 segundos</div>
+      <div class="analogy-text">É como uma fita cassete que só grava no final: você nunca rebobina para mudar uma música antiga. Quando a fita enche, você faz uma cópia resumida (rollup) e guarda a original no porão (cold tier).</div>
+    </div>
+
+    <div class="oneliner-box">
+      <div class="oneliner-text">A decisão de arquitetura: <span>seu dado mais importante é o momento exato em que algo aconteceu, e você nunca muda o passado?</span></div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+        <div class="section-label" style="color:var(--ts-color)">Como funciona</div>
+        <ul class="info-list">
+          <li><strong>Modelo:</strong> (timestamp, metric_name, tags, value); imutável append-only por design. Cada ponto é um evento</li>
+          <li><strong>Armazenamento:</strong> Blocos por time window; delta encoding + RLE para compressão 10:1 típica. TimescaleDB herda páginas do PostgreSQL</li>
+          <li><strong>Indexação:</strong> Timestamp index para range queries; tag indexes para filtros de cardinalidade média. InfluxDB usa TSI (Time Series Index)</li>
+          <li><strong>Distribuição:</strong> Sharding por timestamp ranges; hot/warm/cold tiering automático. Prometheus é single-node; clustering requer Thanos/Cortex</li>
+          <li><strong>Consistência:</strong> Write-once = forte no nó local; imutabilidade elimina race conditions. <strong>Varia por produto:</strong> TimescaleDB (ACID via PostgreSQL), InfluxDB (write-ahead log, não transacional multi-métrica), Prometheus (local TSDB sem semântica transacional distribuída)</li>
+        </ul>
+        <div class="code-box">
+<span class="code-comment">-- Exemplo: PromQL — latência 95th percentil última hora</span><br>
+<span class="code-kw">histogram_quantile</span>(<span class="code-num">0.95</span>,<br>
+&nbsp;&nbsp;<span class="code-kw">rate</span>(http_request_duration_seconds_bucket[<span class="code-num">1h</span>]))
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--ts-color)">Casos de uso reais</div>
+        <ul class="info-list">
+          <li><strong>Infra monitoring:</strong> CPU, memory, disk por servidor via Telegraf/Prometheus; alertas baseados em thresholds</li>
+          <li><strong>APM:</strong> Response times e error rates; correlação com deploys (shift left: "o que mudou antes do pico?")</li>
+          <li><strong>IoT sensores:</strong> Temperatura, pressão — compressão é crítica para milhões de dispositivos com banda limitada</li>
+          <li><strong>Mercado financeiro:</strong> Stock prices, crypto trades, order book snapshots; latência de ingestão é prioridade</li>
+          <li><strong>Retenção:</strong> 1 ano high-fidelity + arquivamento em S3 por 7 anos (downsampling automático de 1min → 1h → 1d)</li>
+        </ul>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--ts-color)">Características</div>
+        <ul class="info-list">
+          <li><strong>Latência:</strong> Alguns ms em write; reads dependem do tier (SSD hot vs HDD cold vs S3 frozen)</li>
+          <li><strong>Throughput:</strong> Centenas de milhares de pontos/segundo por nó em InfluxDB; milhões com clustering</li>
+          <li><strong>Linguagem:</strong> InfluxQL, PromQL, SQL (TimescaleDB), M3 Query. PromQL é funcional e vetorizado</li>
+          <li><strong>Escala:</strong> Horizontal via time-based sharding; novo dia = novo shard natural, sem hot spots de chave</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Quando Evitar
+      </div>
+      <ul class="warning-list">
+        <li>Dados não-sequenciais — design assume ordem temporal; chaves aleatórias degradam performance de compressão</li>
+        <li>Atualizações retroativas — imutabilidade é limitação real; correções exigem reescrita de bloco ou out-of-band annotations</li>
+        <li>Dados sparse com muitos gaps — Key-Value ou Documento é mais eficiente em storage (menos zeros para comprimir)</li>
+        <li>Baixa cardinalidade de tags com queries simples — SQL com índice em timestamp resolve com menos overhead</li>
+        <li>Latência crítica abaixo de 100µs — I/O de storage e network não conseguem garantir consistentemente</li>
+      </ul>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Casos de Uso com IA
+      </div>
+      <div class="ai-grid">
+        <div class="ai-chip"><div class="ai-chip-label">RAG</div><div class="ai-chip-text">Séries temporais de eventos do sistema; retrieval por time windows relevantes para contexto de troubleshooting</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Agentes</div><div class="ai-chip-text">Historical patterns como context; anomaly detection para alerting proativo antes de falhas</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">ML Pipelines</div><div class="ai-chip-text">Séries como features; forecasting (LSTM, Prophet, ARIMA); backtest em histórico com point-in-time correctness</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Observabilidade</div><div class="ai-chip-text">Métricas de inference latency e token throughput; correlação com performance de GPU e filas de requisição</div></div>
+      </div>
+    </div>
+
+    <div class="trivia-box">
+      <div class="trivia-label">📌 O que ninguém te conta</div>
+      <div class="trivia-text">O Prometheus foi criado pelo SoundCloud em 2012 porque as soluções existentes (StatsD + Graphite) não conseguiam escalar com a arquitetura de microserviços. O nome vem do titã da mitologia grega que roubou o fogo dos deuses — apropriado para uma ferramenta que "rouba" métricas de sistemas em produção.</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Consistência</div><div class="stat-value tag-both">Varia*</div></div>
+      <div class="stat"><div class="stat-label">Escala</div><div class="stat-value" style="color:var(--text-secondary)">Horizontal</div></div>
+      <div class="stat"><div class="stat-label">Latência</div><div class="stat-value" style="color:var(--ts-color)">ms</div></div>
+      <div class="stat"><div class="stat-label">Use Case</div><div class="stat-value" style="color:var(--text-secondary);font-size:11px">Métricas sequenciais</div></div>
+    </div>
+    <div class="products-row">
+      <span class="products-label">Produtos</span>
+      <span class="product-tag">InfluxDB</span><span class="product-tag">Prometheus</span><span class="product-tag">TimescaleDB</span><span class="product-tag">VictoriaMetrics</span><span class="product-tag">OpenTSDB</span>
+    </div>
+  </article>
+
+  <!-- ─────────────────── 7. Search Engine ─────────────────── -->
+  <article id="se" class="family-card">
+    <div class="card-header" style="border-top:2px solid var(--search-color)">
+      <div class="card-icon" style="background:rgba(255,166,87,0.08);border-color:rgba(255,166,87,0.25);color:var(--search-color)">🔍</div>
+      <div class="card-header-text">
+        <div class="card-index">// 07 · Família</div>
+        <h2 class="card-title">Banco de Dados de Busca</h2>
+        <p class="card-desc">Otimizado para full-text e relevância. Índice invertido mapeia termos → documentos com scoring BM25. Queries fuzzy, booleanas e facetadas.</p>
+        <div class="badge-row">
+          <span class="badge">Inverted Index</span><span class="badge">BM25 / TF-IDF</span><span class="badge">Near-RT</span><span class="badge">Faceting</span><span class="badge">Stemming</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-label">💡 Analogia em 30 segundos</div>
+      <div class="analogy-text">É como o índice remissivo de um livro grosso: ao invés de ler página por página procurando "guerra", você olha no índice e vê todas as páginas que contêm a palavra. O índice também diz quais páginas têm a palavra mais vezes (relevância).</div>
+    </div>
+
+    <div class="oneliner-box">
+      <div class="oneliner-text">A decisão de arquitetura: <span>seus usuários precisam encontrar coisas que eles não sabem exatamente como se chamam?</span></div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+        <div class="section-label" style="color:var(--search-color)">Como funciona</div>
+        <ul class="info-list">
+          <li><strong>Modelo:</strong> Documentos com campos analisados em posting lists (term → doc_ids + posições + frequência)</li>
+          <li><strong>Armazenamento:</strong> Inverted index comprimido em disco (Lucene segments); doc values para agregações rápidas sem descompressão</li>
+          <li><strong>Analyzers:</strong> Pipeline de tokenização, remoção de stopwords, stemming (reduzir "correndo" → "corr"), lowercasing, sinônimos</li>
+          <li><strong>Distribuição:</strong> Sharding por documentos; índices read-only após flush (Lucene segments imutáveis). Merge de segments é background</li>
+          <li><strong>Consistência:</strong> Near-real-time (refresh lag 1-30s típico); não é imediato após index. Cada shard tem seu próprio refresh cycle</li>
+        </ul>
+        <div class="code-box">
+<span class="code-comment">// Exemplo: Elasticsearch Query DSL — busca fuzzy + filtro</span><br>
+{<br>
+&nbsp;&nbsp;<span class="code-str">"query"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-str">"bool"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-str">"must"</span>: { <span class="code-str">"match"</span>: { <span class="code-str">"titulo"</span>: { <span class="code-str">"query"</span>: <span class="code-str">"engenharia"</span>, <span class="code-str">"fuzziness"</span>: <span class="code-str">"AUTO"</span> } } },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-str">"filter"</span>: { <span class="code-str">"term"</span>: { <span class="code-str">"status"</span>: <span class="code-str">"publicado"</span> } }<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;}<br>
+}
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--search-color)">Casos de uso reais</div>
+        <ul class="info-list">
+          <li><strong>E-commerce:</strong> Busca de produtos com filtros (faceted search), autocomplete, typo tolerance ("sapato" → "sapatos")</li>
+          <li><strong>CMS / Blogs:</strong> Busca em posts, comentários, tags com faceted navigation por categoria/autor/data</li>
+          <li><strong>Documentação:</strong> Código-fonte indexado (GitHub search, Stack Overflow); queries com símbolos e operadores</li>
+          <li><strong>Log analytics:</strong> ELK stack (Elasticsearch + Logstash + Kibana); query por field values e patterns em Kibana</li>
+          <li><strong>Messaging:</strong> Busca em histórico de conversas (Discord-style) com highlighting e contexto</li>
+        </ul>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--search-color)">Características</div>
+        <ul class="info-list">
+          <li><strong>Latência:</strong> 10-100ms para queries; reindexing é background e lento. Latência de indexing ≠ latência de search</li>
+          <li><strong>Throughput:</strong> Alto em read; writes (indexing) são batch ou near-RT. Bulk API é recomendado para ingestão massiva</li>
+          <li><strong>Linguagem:</strong> JSON Query DSL (Elasticsearch); Lucene Java API; Meilisearch REST simples; Solr query parsers</li>
+          <li><strong>Relevância:</strong> BM25 balanceia term frequency vs field length; tuning por boost de campos e function scores</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Quando Evitar
+      </div>
+      <ul class="warning-list">
+        <li>Queries estruturadas apenas com filtros exatos — SQL é mais eficiente sem overhead de scoring e inverted index</li>
+        <li>Atualizações contínuas de documentos — refresh lag é problema real; cada update é delete + reindex do documento</li>
+        <li>Alta cardinalidade em facets — memória para agregações explode (cardinality aggregation usa HyperLogLog++ com erro ~2%)</li>
+        <li>Transações multi-documento — sem ACID; consistência eventual entre shards. Não use como source of truth transacional</li>
+        <li>Joins complexos — denormalização necessária; mais storage e duplicação. Parent-child é limitado e lento</li>
+      </ul>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Casos de Uso com IA
+      </div>
+      <div class="ai-grid">
+        <div class="ai-chip"><div class="ai-chip-label">RAG</div><div class="ai-chip-text">BM25 retrieval para hybrid dense + sparse search; chunks indexados com scoring de relevância lexical</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Agentes</div><div class="ai-chip-text">Pesquisa iterativa; tool calls executam queries em corpus indexado informando próxima ação do agente</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">ML Pipelines</div><div class="ai-chip-text">Document classification em corpus indexado; feature extraction de term vectors (TF-IDF) para modelos clássicos</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Observabilidade</div><div class="ai-chip-text">Latency percentis por tipo de query; investigação de slow logs e shard hotspots via cluster health API</div></div>
+      </div>
+    </div>
+
+    <div class="trivia-box">
+      <div class="trivia-label">📌 O que ninguém te conta</div>
+      <div class="trivia-text">O Elasticsearch nasceu como "Compass" em 2004, projeto pessoal de Shay Banon para ajudar sua esposa (chef de cozinha) a indexar receitas. Virou empresa (Elastic) e hoje é usado por Netflix, Uber e NASA. A receita de ratatouille provavelmente ainda está em algum shard.</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Consistência</div><div class="stat-value tag-eventual">Eventual</div></div>
+      <div class="stat"><div class="stat-label">Escala</div><div class="stat-value" style="color:var(--text-secondary)">Horizontal</div></div>
+      <div class="stat"><div class="stat-label">Latência</div><div class="stat-value" style="color:var(--search-color)">10-100ms</div></div>
+      <div class="stat"><div class="stat-label">Use Case</div><div class="stat-value" style="color:var(--text-secondary);font-size:11px">Full-text relevância</div></div>
+    </div>
+    <div class="products-row">
+      <span class="products-label">Produtos</span>
+      <span class="product-tag">Elasticsearch</span><span class="product-tag">OpenSearch</span><span class="product-tag">Solr</span><span class="product-tag">Algolia</span><span class="product-tag">Meilisearch</span>
+    </div>
+  </article>
+
+  <!-- ─────────────────── 8. Vetorial ─────────────────── -->
+  <article id="ve" class="family-card">
+    <div class="card-header" style="border-top:2px solid var(--vector-color)">
+      <div class="card-icon" style="background:rgba(248,81,73,0.08);border-color:rgba(248,81,73,0.25);color:var(--vector-color)">🧠</div>
+      <div class="card-header-text">
+        <div class="card-index">// 08 · Família</div>
+        <h2 class="card-title">Banco de Dados Vetorial</h2>
+        <p class="card-desc">Armazena embeddings (representações numéricas de alta dimensão). Busca por similaridade via ANN (HNSW, IVF). Core de RAG, recomendações semânticas e multimodal search.</p>
+        <div class="badge-row">
+          <span class="badge">HNSW / IVF</span><span class="badge">ANN</span><span class="badge">k-NN</span><span class="badge">Cosine / L2</span><span class="badge">Embeddings</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-label">💡 Analogia em 30 segundos</div>
+      <div class="analogy-text">É como um mapa de estrelas: cada estrela é um documento, e a distância entre elas representa similaridade. Quando você pergunta "o que é similar a X?", o telescópio (ANN) aponta para as estrelas vizinhas sem calcular a distância até todas as bilhões de estrelas do universo.</div>
+    </div>
+
+    <div class="oneliner-box">
+      <div class="oneliner-text">A decisão de arquitetura: <span>você precisa encontrar coisas "parecidas", não coisas "exatamente iguais"?</span></div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+        <div class="section-label" style="color:var(--vector-color)">Como funciona</div>
+        <ul class="info-list">
+          <li><strong>Modelo:</strong> Vetores densos (768–2048 dim, tipicamente float32) + metadata por item; distância (cosine, euclidean, dot product) define similaridade</li>
+          <li><strong>Indexação:</strong> <abbr title="Hierarchical Navigable Small World: grafo navegável em camadas para busca aproximada">HNSW</abbr> (grafos navegáveis em camadas) ou <abbr title="Inverted File Index: divide o espaço em clusters (Voronoi cells) e busca apenas nos vizinhos mais próximos">IVF</abbr> (clustering prévio com centroides)</li>
+          <li><strong>Trade-off:</strong> ANN sacrifica recall (~95-99%) por latência sub-linear O(log n). Para 100% recall, use brute-force k-NN (muito mais lento)</li>
+          <li><strong>Distribuição:</strong> Product Quantization reduz memória em ~4×; HNSW é menos paralelizável que IVF. Sharding por hash do vetor ID é comum</li>
+          <li><strong>Consistência:</strong> Append-only com soft deletes (tombstones); rebuild de índice é custoso e pode levar horas em bilhões de vetores</li>
+        </ul>
+        <div class="code-box">
+<span class="code-comment"># Exemplo: Python — query de similaridade com metadata filter</span><br>
+<span class="code-kw">import</span> weaviate<br>
+client = weaviate.Client(<span class="code-str">"http://localhost:8080"</span>)<br>
+result = client.query.get(<span class="code-str">"Article"</span>, [<span class="code-str">"title"</span>])<br>
+&nbsp;&nbsp;.with_near_vector({<span class="code-str">"vector"</span>: embedding})<br>
+&nbsp;&nbsp;.with_where({<span class="code-str">"path"</span>: [<span class="code-str">"category"</span>], <span class="code-str">"operator"</span>: <span class="code-str">"Equal"</span>, <span class="code-str">"valueText"</span>: <span class="code-str">"tech"</span>})<br>
+&nbsp;&nbsp;.with_limit(<span class="code-num">5</span>).do()
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--vector-color)">Casos de uso reais</div>
+        <ul class="info-list">
+          <li><strong>RAG:</strong> Chunks textuais embeddados; k-NN retorna contexto para LLM (top-k=5-10, com reranking opcional)</li>
+          <li><strong>Recomendações:</strong> Item embeddings via collaborative filtering ou content-based (ex: Spotify, Pinterest)</li>
+          <li><strong>Multimodal:</strong> CLIP embeddings em mesmo vector space para texto + imagem (busca "cachorro" em fotos)</li>
+          <li><strong>Anomaly detection:</strong> Outliers distantes do cluster normal em embedding space (fraud, drift)</li>
+          <li><strong>Autocomplete semântico:</strong> Interpretação semântica além de prefix match (ex: "máquina de café" → "espresso maker")</li>
+        </ul>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--vector-color)">Características</div>
+        <ul class="info-list">
+          <li><strong>Latência:</strong> 10-50ms para k=100; cresce log(n) com HNSW, mas memória é O(n×M) onde M ~ 16-64 conexões por nó</li>
+          <li><strong>Throughput:</strong> 1000s QPS em single shard para k pequeno; batch search (múltiplos vetores por query) é muito mais eficiente</li>
+          <li><strong>APIs:</strong> Pinecone REST, Weaviate GraphQL, Milvus Python SDK, pgvector SQL (via operador `<->`)</li>
+          <li><strong>Tolerância:</strong> Índices reconstruídos de dados imutáveis; backup dos vetores originais é obrigatório (re-embedding é caro)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Quando Evitar
+      </div>
+      <ul class="warning-list">
+        <li>Busca exata por valor — BM25 ou índices B-tree SQL são superiores e deterministicamente corretos</li>
+        <li>Dados estruturados sem embeddings — SQL filtering é mais rápido, preciso e explicável</li>
+        <li>Latência crítica abaixo de 5ms — ANN approximation, network overhead e serialização de vetores inviabilizam</li>
+        <li>Documentos muito longos — chunking obrigatório antes de embedar; perde contexto global e coerência de parágrafo</li>
+        <li>Sem modelo de embeddings treinado para seu domínio — vetores genéricos (ex: BERT base) podem ter baixa qualidade em domínios técnicos especializados</li>
+      </ul>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Casos de Uso com IA
+      </div>
+      <div class="ai-grid">
+        <div class="ai-chip"><div class="ai-chip-label">RAG</div><div class="ai-chip-text">Core component: embeddings recuperam contexto relevante para geração do LLM (top-k + rerank via cross-encoder)</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Agentes</div><div class="ai-chip-text">Long-term memory; user context embedido e retrieved entre chamadas (session persistence sem limite de context window)</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">ML Pipelines</div><div class="ai-chip-text">Embedding models como feature extractors; transfer learning via pretrained (BERT, CLIP, Ada-002, E5)</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Observabilidade</div><div class="ai-chip-text">Embedding drift monitoring via comparação de distribuições (MMD, KL divergence); hallucination detection via context relevance scoring</div></div>
+      </div>
+    </div>
+
+    <div class="trivia-box">
+      <div class="trivia-label">📌 O que ninguém te conta</div>
+      <div class="trivia-text">O pgvector (extensão PostgreSQL para vetores) foi criado por um único desenvolvedor (Andrew Kane) e se tornou uma das formas mais populares de rodar RAG sem infra extra. Em 2024, a Pinecone (saaS vetorial) ainda não era lucrativa, enquanto milhares de empresas usavam pgvector de graça.</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Consistência</div><div class="stat-value tag-eventual">Eventual</div></div>
+      <div class="stat"><div class="stat-label">Escala</div><div class="stat-value" style="color:var(--text-secondary)">Horizontal</div></div>
+      <div class="stat"><div class="stat-label">Latência</div><div class="stat-value" style="color:var(--vector-color)">10-50ms</div></div>
+      <div class="stat"><div class="stat-label">Use Case</div><div class="stat-value" style="color:var(--text-secondary);font-size:11px">Similaridade semântica</div></div>
+    </div>
+    <div class="products-row">
+      <span class="products-label">Produtos</span>
+      <span class="product-tag">Pinecone</span><span class="product-tag">Weaviate</span><span class="product-tag">Qdrant</span><span class="product-tag">pgvector</span><span class="product-tag">Milvus</span>
+    </div>
+  </article>
+
+  <!-- ─────────────────── 9. OLAP ─────────────────── -->
+  <article id="ol" class="family-card">
+    <div class="card-header" style="border-top:2px solid var(--olap-color)">
+      <div class="card-icon" style="background:rgba(46,168,158,0.08);border-color:rgba(46,168,158,0.25);color:var(--olap-color)">🏛️</div>
+      <div class="card-header-text">
+        <div class="card-index">// 09 · Família</div>
+        <h2 class="card-title">Banco de Dados Colunar / OLAP</h2>
+        <p class="card-desc">Otimizado para leitura analítica massiva. Armazena por coluna com compressão alta (dictionary, bit-packing, RLE). Queries agregam terabytes em segundos via SIMD.</p>
+        <div class="badge-row">
+          <span class="badge">Columnar storage</span><span class="badge">10-100× compressão</span><span class="badge">SIMD vectorization</span><span class="badge">Zone maps</span><span class="badge">MVCC snapshots</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="analogy-box">
+      <div class="analogy-label">💡 Analogia em 30 segundos</div>
+      <div class="analogy-text">É como uma planilha onde, ao invés de guardar linha por linha, você guarda coluna por coluna. Se 90% dos valores da coluna "cidade" são "São Paulo", você escreve "São Paulo" uma vez e aponta para ele — economizando espaço e acelerando agregações.</div>
+    </div>
+
+    <div class="oneliner-box">
+      <div class="oneliner-text">A decisão de arquitetura: <span>você precisa fazer perguntas sobre bilhões de registros que já aconteceram, não sobre o que está acontecendo agora?</span></div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+        <div class="section-label" style="color:var(--olap-color)">Como funciona</div>
+        <ul class="info-list">
+          <li><strong>Armazenamento:</strong> Colunas separadas com dictionary encoding, bit-packing, RLE; valores repetidos comprimem agressivamente. ClickHouse usa MergeTree; DuckDB é in-process</li>
+          <li><strong>Indexação:</strong> Zone maps (min/max por block); sparse indexes; sem B-trees tradicionais. Predicate push-down evita ler blocos irrelevantes</li>
+          <li><strong>Consulta:</strong> Bulk scans com predicate push-down; vetorização SIMD processa milhões de valores por instrução. Paralelismo massivo (MPP)</li>
+          <li><strong>Distribuição:</strong> Sharding por key range; cada shard replica todas as colunas. Snowflake/BigQuery separam storage (S3) de compute</li>
+          <li><strong>Consistência:</strong> Writes em batch; MVCC snapshots; apenas reads consistentes durante query. Não é para transações interativas</li>
+        </ul>
+        <div class="code-box">
+<span class="code-comment">-- Exemplo: ClickHouse — agregação por dimensão com filtros</span><br>
+<span class="code-kw">SELECT</span><br>
+&nbsp;&nbsp; cidade,<br>
+&nbsp;&nbsp; <span class="code-kw">SUM</span>(revenue) <span class="code-kw">AS</span> total,<br>
+&nbsp;&nbsp; <span class="code-kw">AVG</span>(latency) <span class="code-kw">AS</span> lat_media<br>
+<span class="code-kw">FROM</span> eventos<br>
+<span class="code-kw">WHERE</span> event_date >= <span class="code-str">'2026-01-01'</span><br>
+<span class="code-kw">GROUP BY</span> cidade<br>
+<span class="code-kw">ORDER BY</span> total <span class="code-kw">DESC</span><br>
+<span class="code-kw">LIMIT</span> <span class="code-num">100</span>;
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--olap-color)">Casos de uso reais</div>
+        <ul class="info-list">
+          <li><strong>BI / Analytics:</strong> Histórico de vendas e user behavior; dashboards Tableau/Looker/Metabase/Superset</li>
+          <li><strong>Data warehouse:</strong> Consolidação de múltiplos OLTPs em star/snowflake schema; ETL/ELT pipelines</li>
+          <li><strong>Log analytics:</strong> Status codes e error types em colunas; queries ad-hoc por engenharia sem index tuning</li>
+          <li><strong>Detecção de fraude:</strong> Patterns em transações históricas por user/merchant em janelas longas (últimos 12 meses)</li>
+          <li><strong>Observabilidade:</strong> Traces estruturados em colunas; latência por serviço em granularidade fina com GROUP BY</li>
+        </ul>
+      </div>
+      <div class="card-section">
+        <div class="section-label" style="color:var(--olap-color)">Características</div>
+        <ul class="info-list">
+          <li><strong>Latência:</strong> Segundos para queries em TBs — batch oriented, não interativo. DuckDB local pode responder em ms para GBs</li>
+          <li><strong>Throughput:</strong> Terabytes/dia em analytics pipeline; ingestão via batch ou stream (Kafka → ClickHouse/Snowflake)</li>
+          <li><strong>Linguagem:</strong> SQL padrão; ClickHouse SQL, Snowflake SQL, BigQuery SQL, DuckDB (compatível com PostgreSQL dialect)</li>
+          <li><strong>Compressão:</strong> 10-100× típico vs OLTP; dictionary values repetidas eliminam redundância. BigQuery cobra por TB scanneado, então compressão = dinheiro</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <div class="warning-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Quando Evitar
+      </div>
+      <ul class="warning-list">
+        <li>Atualizações frequentes de registros — rewrite de coluna inteira é custoso; use OLTP e replique para OLAP</li>
+        <li>Latência crítica abaixo de 100ms — scan colunar é inerentemente O(n) no pior caso; cache o resultado</li>
+        <li>Poucas linhas como output — overhead de descompressão colunar não se justifica; SQLite/PostgreSQL resolve</li>
+        <li>Transações ACID interativas — eventual consistency / snapshot isolation é o padrão. Não use para checkout</li>
+        <li>Dados abaixo de 100GB — overhead de sistema distribuído desnecessário; DuckDB local ou PostgreSQL resolve</li>
+      </ul>
+    </div>
+
+    <div class="ai-box">
+      <div class="ai-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Casos de Uso com IA
+      </div>
+      <div class="ai-grid">
+        <div class="ai-chip"><div class="ai-chip-label">RAG</div><div class="ai-chip-text">Grandes corpora em warehouse; chunking estratégico para retrieval eficiente em escala (batch embedding + bulk load)</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Agentes</div><div class="ai-chip-text">Analytics queries como tools; raciocínio sobre dados históricos via SQL gerado pelo LLM (text-to-SQL)</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">ML Pipelines</div><div class="ai-chip-text">Feature engineering em warehouse; Spark atop warehouse para big data training; materialized views como feature tables</div></div>
+        <div class="ai-chip"><div class="ai-chip-label">Observabilidade</div><div class="ai-chip-text">Análise de métricas LLM em warehouse; correlação token throughput/performance por modelo e versão de deployment</div></div>
+      </div>
+    </div>
+
+    <div class="trivia-box">
+      <div class="trivia-label">📌 O que ninguém te conta</div>
+      <div class="trivia-text">O DuckDB foi criado por pesquisadores holandeses da CWI (mesmo instituto que criou o Python). Ele roda <strong>no browser via WebAssembly</strong> — você pode analisar gigabytes de dados em uma página web sem servidor. É o "SQLite do analytics".</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">Consistência</div><div class="stat-value tag-both">Snapshot</div></div>
+      <div class="stat"><div class="stat-label">Escala</div><div class="stat-value" style="color:var(--text-secondary)">Horizontal</div></div>
+      <div class="stat"><div class="stat-label">Latência</div><div class="stat-value" style="color:var(--olap-color)">Segundos</div></div>
+      <div class="stat"><div class="stat-label">Use Case</div><div class="stat-value" style="color:var(--text-secondary);font-size:11px">Analytics em escala</div></div>
+    </div>
+    <div class="products-row">
+      <span class="products-label">Produtos</span>
+      <span class="product-tag">ClickHouse</span><span class="product-tag">Snowflake</span><span class="product-tag">BigQuery</span><span class="product-tag">Redshift</span><span class="product-tag">DuckDB</span>
+    </div>
+  </article>
+
+</main>
+
+<!-- ══════════════════════════════ MAPA DE DECISÃO ══════════════════════════════ -->
+<section class="section-wrap">
+  <h2 class="section-title">Mapa de Decisão Arquitetural</h2>
+  <p class="section-subtitle">// fluxo de 3 perguntas para escolher a família certa</p>
+
+  <div class="decision-map">
+    <div class="decision-step">
+      <div class="decision-question">1. Seus dados precisam de garantias transacionais fortes (ACID) com updates frequentes?</div>
+      <div class="decision-answers">
+        <div class="decision-answer"><strong>Sim →</strong> SQL Relacional (PostgreSQL, MySQL)</div>
+        <div class="decision-answer"><strong>Não →</strong> Continue para a pergunta 2</div>
+      </div>
+    </div>
+    <div class="decision-step">
+      <div class="decision-question">2. Qual é o padrão de acesso dominante?</div>
+      <div class="decision-answers">
+        <div class="decision-answer"><strong>Chave exata, cache, session →</strong> Key-Value (Redis, DynamoDB)</div>
+        <div class="decision-answer"><strong>Documentos flexíveis, schema evolutivo →</strong> Documentos (MongoDB, Firestore)</div>
+        <div class="decision-answer"><strong>Relacionamentos, redes, fraude →</strong> Grafo (Neo4j)</div>
+        <div class="decision-answer"><strong>Busca textual, relevância, fuzzy →</strong> Busca (Elasticsearch)</div>
+        <div class="decision-answer"><strong>Similaridade semântica, embeddings →</strong> Vetorial (Pinecone, pgvector)</div>
+        <div class="decision-answer"><strong>Sequencial temporal, métricas →</strong> Continue para a pergunta 3</div>
+        <div class="decision-answer"><strong>Agregações massivas, BI →</strong> OLAP (ClickHouse, Snowflake)</div>
+      </div>
+    </div>
+    <div class="decision-step">
+      <div class="decision-question">3. Dados temporais: precisa de ACID ou escala massiva de writes?</div>
+      <div class="decision-answers">
+        <div class="decision-answer"><strong>ACID + time-series →</strong> TimescaleDB (SQL com extensão)</div>
+        <div class="decision-answer"><strong>Escala massiva, immutability →</strong> Time-Series (InfluxDB) ou Wide-Column (Cassandra)</div>
+        <div class="decision-answer"><strong>Monitoramento/alerting →</strong> Prometheus + Thanos</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ COMPARAÇÃO ══════════════════════════════ -->
+<section class="section-wrap">
+  <h2 class="section-title">Comparação Resumida</h2>
+  <p class="section-subtitle">// trade-offs entre as 9 famílias</p>
+
+  <div style="overflow-x:auto">
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Família</th>
+        <th>Consistência</th>
+        <th>Escala</th>
+        <th>Latência</th>
+        <th>Throughput Write</th>
+        <th>Use Case Primário</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><div class="family-name-cell"><span class="family-dot" style="background:var(--sql-color)"></span>SQL Relacional</div></td>
+        <td><span class="tag-acid">ACID</span></td>
+        <td>Vertical</td>
+        <td>P50 ms</td>
+        <td>Médio</td>
+        <td>Transações complexas, CRM, ERP</td>
+      </tr>
+      <tr>
+        <td><div class="family-name-cell"><span class="family-dot" style="background:var(--doc-color)"></span>Documentos</div></td>
+        <td><span class="tag-base">BASE</span></td>
+        <td>Horizontal</td>
+        <td>P50 ms</td>
+        <td>Alto</td>
+        <td>Dados flexíveis, IoT, Mobile</td>
+      </tr>
+      <tr>
+        <td><div class="family-name-cell"><span class="family-dot" style="background:var(--kv-color)"></span>Key-Value</div></td>
+        <td><span class="tag-both">ACID/Evt</span></td>
+        <td>Horizontal</td>
+        <td>Sub-ms</td>
+        <td>Muito alto</td>
+        <td>Cache, sessions, rate limiting</td>
+      </tr>
+      <tr>
+        <td><div class="family-name-cell"><span class="family-dot" style="background:var(--wide-color)"></span>Wide-Column</div></td>
+        <td><span class="tag-base">BASE</span></td>
+        <td>Horizontal</td>
+        <td>10-50ms</td>
+        <td>Muito alto</td>
+        <td>Time-series massivo, event logs</td>
+      </tr>
+      <tr>
+        <td><div class="family-name-cell"><span class="family-dot" style="background:var(--graph-color)"></span>Grafo</div></td>
+        <td><span class="tag-both">ACID/Evt</span></td>
+        <td>Complexo</td>
+        <td>ms</td>
+        <td>Baixo–Médio</td>
+        <td>Relacionamentos, fraude, social</td>
+      </tr>
+      <tr>
+        <td><div class="family-name-cell"><span class="family-dot" style="background:var(--ts-color)"></span>Time-Series</div></td>
+        <td><span class="tag-both">Varia*</span></td>
+        <td>Horizontal</td>
+        <td>ms</td>
+        <td>Muito alto</td>
+        <td>Monitoring, IoT, finanças</td>
+      </tr>
+      <tr>
+        <td><div class="family-name-cell"><span class="family-dot" style="background:var(--search-color)"></span>Busca</div></td>
+        <td><span class="tag-eventual">Eventual</span></td>
+        <td>Horizontal</td>
+        <td>10-100ms</td>
+        <td>Baixo</td>
+        <td>Full-text, e-commerce, logs</td>
+      </tr>
+      <tr>
+        <td><div class="family-name-cell"><span class="family-dot" style="background:var(--vector-color)"></span>Vetorial</div></td>
+        <td><span class="tag-eventual">Eventual</span></td>
+        <td>Horizontal</td>
+        <td>10-50ms</td>
+        <td>Médio</td>
+        <td>RAG, recomendações semânticas</td>
+      </tr>
+      <tr>
+        <td><div class="family-name-cell"><span class="family-dot" style="background:var(--olap-color)"></span>Colunar / OLAP</div></td>
+        <td><span class="tag-both">Snapshot</span></td>
+        <td>Horizontal</td>
+        <td>Segundos</td>
+        <td>Batch</td>
+        <td>BI, data warehouse, analytics</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="table-note">* Time-Series: TimescaleDB = ACID (PostgreSQL); InfluxDB = write-ahead log (não transacional multi-métrica); Prometheus = local TSDB sem semântica transacional distribuída.</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ FOOTER ══════════════════════════════ -->
+<footer class="footer">
+  <span style="color:var(--accent-cyan)">// </span>
+  Bancos de Dados Modernos · Guia Técnico v2.0 · Maio 2026 &nbsp;·&nbsp;
+  <span style="color:var(--text-dim)">9 Famílias · Polyglot Persistence · Use the right tool for the right job</span>
+</footer>
+
+</div><!-- .page-wrap -->
+</body>
+</html>
